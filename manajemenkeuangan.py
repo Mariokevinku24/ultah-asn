@@ -1,125 +1,102 @@
 import streamlit as st
 import pandas as pd
-import datetime
 import os
-from openpyxl.styles import numbers
+from datetime import date
+from io import BytesIO
 
 FILE_PATH = "catatan_keuangan.xlsx"
+SHEET_NAME = "Keuangan"
 
-# Simpan data dengan format tanggal
-def save_data(df):
-    with pd.ExcelWriter(FILE_PATH, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False)
-        worksheet = writer.sheets['Sheet1']
-        for cell in worksheet['A'][1:]:  # kolom tanggal
-            cell.number_format = numbers.FORMAT_DATE_DDMMYYYY
-
-# Load data dan validasi kolom
-def load_data():
-    kolom_default = ["Tanggal", "Keterangan", "Jumlah", "Uang di Tabungan", "Uang di Tangan"]
-    if os.path.exists(FILE_PATH):
-        df = pd.read_excel(FILE_PATH)
-        for kolom in kolom_default:
-            if kolom not in df.columns:
-                df[kolom] = 0
-        return df[kolom_default]
-    else:
-        df = pd.DataFrame(columns=kolom_default)
-        save_data(df)
-        return df
-
-# Setup halaman
 st.set_page_config(page_title="Manajemen Keuangan", layout="centered")
-st.title("💰 Aplikasi Manajemen Keuangan Pribadi")
+st.title("💰 Manajemen Keuangan Pribadi")
 
-# Session state
-if "saldo_awal" not in st.session_state:
-    st.session_state["saldo_awal"] = 0
-if "hapus_id" not in st.session_state:
-    st.session_state["hapus_id"] = None
+# Fungsi untuk memuat data
+def load_data():
+    if os.path.exists(FILE_PATH):
+        return pd.read_excel(FILE_PATH, sheet_name=SHEET_NAME)
+    else:
+        return pd.DataFrame(columns=["Tanggal", "Keterangan", "Jumlah", "Uang di Tabungan", "Uang di Tangan"])
 
-# Sidebar saldo
-st.sidebar.header("🔧 Pengaturan Awal")
-saldo_awal = st.sidebar.number_input("Saldo Awal (Rp)", min_value=0, value=st.session_state["saldo_awal"])
-st.session_state["saldo_awal"] = saldo_awal
+# Fungsi untuk menyimpan data
+def save_data(df):
+    with pd.ExcelWriter(FILE_PATH, engine="openpyxl", mode="w") as writer:
+        df.to_excel(writer, index=False, sheet_name=SHEET_NAME)
 
-# Form input
-st.subheader("📝 Catat Pengeluaran")
+# === FORM INPUT ===
+st.subheader("➕ Tambah Pengeluaran")
 with st.form("form_pengeluaran"):
-    keterangan = st.text_input("Keterangan", placeholder="Contoh: Beli pulsa")
+    keterangan = st.text_input("Keterangan")
     jumlah = st.number_input("Jumlah Pengeluaran (Rp)", min_value=0)
     tunai = st.number_input("Uang Disimpan di Tangan (Rp)", min_value=0)
-    tanggal = st.date_input("Tanggal", value=datetime.date.today())
-    submit = st.form_submit_button("💾 Simpan")
+    tanggal = st.date_input("Tanggal", value=date.today())
+    simpan = st.form_submit_button("Simpan")
 
-    if submit and (jumlah > 0 or tunai > 0):
-        df = load_data()
-        tabungan = max(saldo_awal - jumlah - tunai, 0)
-        new_row = {
+    if simpan and (jumlah > 0 or tunai > 0):
+        tabungan = jumlah - tunai
+        if tabungan < 0:
+            tabungan = 0
+
+        new_row = pd.DataFrame([{
             "Tanggal": tanggal,
             "Keterangan": keterangan,
             "Jumlah": jumlah,
             "Uang di Tabungan": tabungan,
             "Uang di Tangan": tunai
-        }
-        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+        }])
+
+        df = load_data()
+        df = pd.concat([df, new_row], ignore_index=True)
         save_data(df)
         st.success("✅ Data berhasil disimpan!")
-        st.experimental_rerun()
 
-# Load data dan konversi tanggal
-df = load_data()
-df["Tanggal"] = pd.to_datetime(df["Tanggal"]).dt.date
-
-# Filter tanggal
-st.subheader("📅 Lihat Pengeluaran per Tanggal")
-tanggal_filter = st.date_input("Pilih tanggal:", value=datetime.date.today())
-filtered_data = df[df["Tanggal"] == tanggal_filter]
-
-# Tampilkan data
-st.markdown(f"### 📋 Data pada {tanggal_filter.strftime('%d %B %Y')}")
-hapus_index = None
-if not filtered_data.empty:
-    for idx, row in filtered_data.iterrows():
-        st.markdown(f"""
-        **{row['Keterangan']}**
-        - Jumlah: Rp {row['Jumlah']:,.0f}
-        - Tabungan: Rp {row['Uang di Tabungan']:,.0f}
-        - Tunai: Rp {row['Uang di Tangan']:,.0f}
-        """)
-        if st.button("🗑 Hapus", key=f"hapus_{idx}"):
-            st.session_state["hapus_id"] = row.name
-            st.experimental_rerun()
-else:
-    st.info("Belum ada data untuk tanggal tersebut.")
-
-# Hapus data jika diperlukan
-if st.session_state.get("hapus_id") is not None:
-    df = df.drop(index=st.session_state["hapus_id"])
-    df.reset_index(drop=True, inplace=True)
-    save_data(df)
-    st.session_state["hapus_id"] = None
-    st.success("✅ Data berhasil dihapus.")
-    st.experimental_rerun()
-
-# Ringkasan
-st.subheader("📊 Ringkasan Total")
-total_pengeluaran = df["Jumlah"].sum()
-total_tabungan = df["Uang di Tabungan"].sum()
-total_tunai = df["Uang di Tangan"].sum()
-sisa_saldo = saldo_awal - total_pengeluaran
-
-col1, col2, col3 = st.columns(3)
-col1.metric("Total Pengeluaran", f"Rp {total_pengeluaran:,.0f}")
-col2.metric("Total Tabungan", f"Rp {total_tabungan:,.0f}")
-col3.metric("Total Tunai", f"Rp {total_tunai:,.0f}")
-
-st.success(f"💡 Sisa Saldo: Rp {sisa_saldo:,.0f}")
-
-# Unduh Excel
-st.subheader("⬇️ Unduh Rekap Keuangan")
+# === TAMPILKAN DATA ===
 if os.path.exists(FILE_PATH):
-    with open(FILE_PATH, "rb") as f:
-        st.download_button("📥 Download Excel", f, file_name="rekap_keuangan.xlsx")
+    st.subheader("📋 Riwayat Pengeluaran")
+    df = load_data()
+    st.dataframe(df, use_container_width=True)
+
+    # Ringkasan
+    st.subheader("📊 Ringkasan")
+    total_pengeluaran = df["Jumlah"].sum()
+    total_tabungan = df["Uang di Tabungan"].sum()
+    total_tunai = df["Uang di Tangan"].sum()
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Pengeluaran", f"Rp {total_pengeluaran:,.0f}")
+    col2.metric("Total Tabungan", f"Rp {total_tabungan:,.0f}")
+    col3.metric("Total Tunai", f"Rp {total_tunai:,.0f}")
+
+    # Download
+    st.subheader("⬇️ Unduh Data")
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name=SHEET_NAME)
+    output.seek(0)
+
+    st.download_button(
+        label="📥 Unduh Rekap Excel",
+        data=output,
+        file_name=FILE_PATH,
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+    # === HAPUS DATA ===
+    with st.expander("🗑️ Hapus Pengeluaran"):
+        st.markdown("Centang data yang ingin dihapus:")
+        rows_to_delete = []
+        for i, row in df.iterrows():
+            label = f"{row['Tanggal']} - {row['Keterangan']} - Rp{row['Jumlah']:,.0f}"
+            if st.checkbox(label, key=f"hapus_{i}"):
+                rows_to_delete.append(i)
+
+        if st.button("🗑️ Hapus Data Terpilih"):
+            if rows_to_delete:
+                df = df.drop(index=rows_to_delete).reset_index(drop=True)
+                save_data(df)
+                st.success(f"✅ {len(rows_to_delete)} data berhasil dihapus!")
+                st.experimental_rerun()
+            else:
+                st.warning("⚠️ Belum ada data yang dipilih untuk dihapus.")
 else:
-    st.info("Belum ada data untuk diunduh.")
+    st.info("📂 Belum ada data keuangan.")
+
