@@ -11,7 +11,6 @@ def load_data():
     kolom_default = ["Tanggal", "Keterangan", "Jumlah", "Uang di Tabungan", "Uang di Tangan"]
     if os.path.exists(FILE_PATH):
         df = pd.read_excel(FILE_PATH)
-        # Tambah kolom yang hilang
         for kolom in kolom_default:
             if kolom not in df.columns:
                 df[kolom] = 0
@@ -24,6 +23,10 @@ def load_data():
 # Fungsi simpan
 def save_data(df):
     df.to_excel(FILE_PATH, index=False)
+
+# Setup session state untuk penghapusan
+if "hapus_index" not in st.session_state:
+    st.session_state["hapus_index"] = None
 
 # Konfigurasi halaman
 st.set_page_config(page_title="Manajemen Keuangan", layout="centered")
@@ -80,13 +83,19 @@ if not filtered_data.empty:
         - Tunai: Rp {row['Uang di Tangan']:,.0f}
         """)
         if st.button("🗑 Hapus", key=f"hapus_{idx}"):
-            df = df.drop(index=idx)
-            df.reset_index(drop=True, inplace=True)
-            save_data(df)
-            st.warning("Data dihapus.")
+            st.session_state["hapus_index"] = df.index[df["Tanggal"] == tanggal_filter][idx]
             st.experimental_rerun()
 else:
     st.info("Belum ada data untuk tanggal tersebut.")
+
+# Proses penghapusan di luar loop
+if st.session_state.get("hapus_index") is not None:
+    df = df.drop(index=st.session_state["hapus_index"])
+    df.reset_index(drop=True, inplace=True)
+    save_data(df)
+    st.session_state["hapus_index"] = None
+    st.success("✅ Data berhasil dihapus.")
+    st.experimental_rerun()
 
 # Ringkasan
 st.subheader("📊 Ringkasan Total")
@@ -109,3 +118,4 @@ if os.path.exists(FILE_PATH):
         st.download_button("📥 Download Excel", f, file_name="rekap_keuangan.xlsx")
 else:
     st.info("Belum ada data untuk diunduh.")
+
