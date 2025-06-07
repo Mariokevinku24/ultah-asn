@@ -13,7 +13,7 @@ try:
 except:
     pass
 
-st.title("Generator Banyak Surat CSR (ZIP + Preview + Format Jumlah)")
+st.title("Generator Surat Perusahaan")
 
 # Upload file
 excel_file = st.file_uploader("Upload Excel (daftar perusahaan)", type="xlsx")
