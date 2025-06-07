@@ -2,43 +2,37 @@ import streamlit as st
 import pandas as pd
 from docxtpl import DocxTemplate
 from io import BytesIO
+import zipfile
 
-def generate_surat(template_path, nama_perusahaan_list):
-    output_doc = BytesIO()
-    combined_doc = None
-
-    for i, nama in enumerate(nama_perusahaan_list):
-        tpl = DocxTemplate(template_path)
-        context = {"Nama_Perusahaan": nama}
-        tpl.render(context)
-        
-        temp_stream = BytesIO()
-        tpl.save(temp_stream)
-        temp_stream.seek(0)
-
-        # Tambahkan ke dokumen gabungan
-        if combined_doc is None:
-            combined_doc = DocxTemplate(temp_stream)
-        else:
-            doc = DocxTemplate(temp_stream)
-            for element in doc.docx.element.body:
-                combined_doc.docx.element.body.append(element)
-            combined_doc.docx.element.body.append(doc.docx.element.body[-1])  # Optional: tambah pemisah
-
-    combined_doc.save(output_doc)
-    output_doc.seek(0)
-    return output_doc
-
-st.title("Generator Surat CSR Format Rapi")
+st.title("Generator Banyak Surat CSR (ZIP)")
 
 excel_file = st.file_uploader("Upload Excel (daftar perusahaan)", type="xlsx")
 template_file = st.file_uploader("Upload Template Surat (Word .docx)", type="docx")
+
+def generate_zip(template_file, perusahaan_list):
+    zip_buffer = BytesIO()
+
+    with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+        for nama in perusahaan_list:
+            tpl = DocxTemplate(template_file)
+            context = {"Nama_Perusahaan": nama}
+            tpl.render(context)
+
+            doc_io = BytesIO()
+            tpl.save(doc_io)
+            doc_io.seek(0)
+
+            filename = f"Surat_{nama}.docx"
+            zip_file.writestr(filename, doc_io.read())
+
+    zip_buffer.seek(0)
+    return zip_buffer
 
 if excel_file and template_file:
     df = pd.read_excel(excel_file)
     nama_perusahaan = df.iloc[:, 0].dropna().tolist()
 
     if st.button("Buat Surat"):
-        hasil = generate_surat(template_file, nama_perusahaan)
-        st.download_button("Download Surat Gabungan", hasil, file_name="surat_csr.docx")
+        hasil_zip = generate_zip(template_file, nama_perusahaan)
 
+        st.download_button("Download Semua Surat (.zip)", hasil_zip, file_name="semua_surat.zip")
