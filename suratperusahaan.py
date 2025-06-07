@@ -9,24 +9,34 @@ st.title("Generator Banyak Surat CSR (ZIP)")
 excel_file = st.file_uploader("Upload Excel (daftar perusahaan)", type="xlsx")
 template_file = st.file_uploader("Upload Template Surat (Word .docx)", type="docx")
 
-def generate_zip(template_file, perusahaan_list):
+def generate_zip(template_file, data_rows):
     zip_buffer = BytesIO()
 
     with zipfile.ZipFile(zip_buffer, "w") as zip_file:
-        for nama in perusahaan_list:
+        for row in data_rows:
             tpl = DocxTemplate(template_file)
-            context = {"Nama_Perusahaan": nama}
+
+            # Ambil data dengan nilai default jika tidak ada
+            context = {
+                "Nama_Perusahaan": row.get("Nama_Perusahaan", "N/A"),
+                "Nama_Direktur": row.get("Nama_Direktur", ""),  # Kosong jika tidak ada
+                "Jabatan_Direktur": row.get("Jabatan_Direktur", "")  # Kosong jika tidak ada
+            }
+
             tpl.render(context)
 
             doc_io = BytesIO()
             tpl.save(doc_io)
             doc_io.seek(0)
 
-            filename = f"Surat_{nama}.docx"
+            # Buat nama file yang aman
+            safe_nama = context["Nama_Perusahaan"].replace("/", "-")
+            filename = f"Surat_{safe_nama}.docx"
             zip_file.writestr(filename, doc_io.read())
 
     zip_buffer.seek(0)
     return zip_buffer
+
 
 if excel_file and template_file:
     df = pd.read_excel(excel_file)
