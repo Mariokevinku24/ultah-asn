@@ -3,9 +3,10 @@ import pandas as pd
 import datetime
 import os
 
+# Path file Excel
 FILE_PATH = "catatan_keuangan.xlsx"
 
-# Load atau buat file data
+# Load atau buat file baru
 def load_data():
     if os.path.exists(FILE_PATH):
         return pd.read_excel(FILE_PATH)
@@ -14,28 +15,30 @@ def load_data():
         df.to_excel(FILE_PATH, index=False)
         return df
 
+# Simpan ke file Excel
 def save_data(df):
     df.to_excel(FILE_PATH, index=False)
 
-# Inisialisasi
-st.title("💰 Aplikasi Manajemen Keuangan Pribadi (Lanjutan)")
+# Judul Aplikasi
+st.set_page_config(page_title="Manajemen Keuangan", layout="centered")
+st.title("💰 Aplikasi Manajemen Keuangan Pribadi")
 
+# Sidebar untuk saldo awal
+st.sidebar.header("🔧 Pengaturan Awal")
 if "saldo_awal" not in st.session_state:
     st.session_state["saldo_awal"] = 0
 
-# Sidebar: Saldo Awal
-st.sidebar.header("🔧 Pengaturan Awal")
-saldo_awal = st.sidebar.number_input("Masukkan Saldo Awal (Rp)", min_value=0, value=st.session_state["saldo_awal"])
+saldo_awal = st.sidebar.number_input("Saldo Awal (Rp)", min_value=0, value=st.session_state["saldo_awal"])
 st.session_state["saldo_awal"] = saldo_awal
 
-# Form input data pengeluaran
-st.subheader("📝 Tambah Pengeluaran")
+# Form input
+st.subheader("📝 Catat Pengeluaran")
 with st.form("form_pengeluaran"):
-    keterangan = st.text_input("Keterangan", placeholder="Contoh: Bensin")
+    keterangan = st.text_input("Keterangan", placeholder="Contoh: Makan siang")
     jumlah = st.number_input("Jumlah Pengeluaran (Rp)", min_value=0)
-    tabungan = st.number_input("Uang yang Masuk ke Tabungan (Rp)", min_value=0)
-    tunai = st.number_input("Uang yang Disimpan di Tangan (Rp)", min_value=0)
-    tanggal = st.date_input("Tanggal Pengeluaran", value=datetime.date.today())
+    tabungan = st.number_input("Uang Masuk ke Tabungan (Rp)", min_value=0)
+    tunai = st.number_input("Uang Disimpan di Tangan (Rp)", min_value=0)
+    tanggal = st.date_input("Tanggal", value=datetime.date.today())
     submit = st.form_submit_button("💾 Simpan")
 
     if submit and (jumlah > 0 or tabungan > 0 or tunai > 0):
@@ -49,19 +52,19 @@ with st.form("form_pengeluaran"):
         }
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
         save_data(df)
-        st.success("Data berhasil ditambahkan!")
+        st.success("✅ Data berhasil disimpan!")
 
-# Load data & konversi tanggal
+# Load dan proses data
 df = load_data()
 df["Tanggal"] = pd.to_datetime(df["Tanggal"]).dt.date
 
 # Kalender filter
-st.subheader("📅 Pilih Tanggal untuk Ditampilkan")
-tanggal_filter = st.date_input("Filter tanggal:", value=datetime.date.today())
+st.subheader("📅 Lihat Pengeluaran per Tanggal")
+tanggal_filter = st.date_input("Pilih tanggal:", value=datetime.date.today())
 filtered_data = df[df["Tanggal"] == tanggal_filter]
 
-# Tabel pengeluaran
-st.subheader(f"📋 Data pada {tanggal_filter.strftime('%d %B %Y')}")
+# Tampilkan data per tanggal
+st.markdown(f"### 📋 Data pada {tanggal_filter.strftime('%d %B %Y')}")
 if not filtered_data.empty:
     for idx, row in filtered_data.iterrows():
         st.markdown(f"""
@@ -70,16 +73,16 @@ if not filtered_data.empty:
         - Tabungan: Rp {row['Uang di Tabungan']:,.0f}
         - Tunai: Rp {row['Uang di Tangan']:,.0f}
         """)
-        if st.button("🗑 Hapus", key=str(idx)):
+        if st.button("🗑 Hapus", key=f"hapus_{idx}"):
             df = df.drop(index=idx)
             df.reset_index(drop=True, inplace=True)
             save_data(df)
-            st.warning("Data berhasil dihapus.")
+            st.warning("Data dihapus.")
             st.experimental_rerun()
 else:
-    st.info("Tidak ada data untuk tanggal tersebut.")
+    st.info("Belum ada data untuk tanggal tersebut.")
 
-# Ringkasan keuangan
+# Ringkasan Total
 st.subheader("📊 Ringkasan Total")
 total_pengeluaran = df["Jumlah"].sum()
 total_tabungan = df["Uang di Tabungan"].sum()
@@ -89,19 +92,14 @@ sisa_saldo = saldo_awal - total_pengeluaran
 col1, col2, col3 = st.columns(3)
 col1.metric("Total Pengeluaran", f"Rp {total_pengeluaran:,.0f}")
 col2.metric("Total Tabungan", f"Rp {total_tabungan:,.0f}")
-col3.metric("Total Uang di Tangan", f"Rp {total_tunai:,.0f}")
+col3.metric("Total Tunai", f"Rp {total_tunai:,.0f}")
 
-st.write(f"**Sisa Saldo = Rp {sisa_saldo:,.0f}**")
+st.success(f"💡 Sisa Saldo: Rp {sisa_saldo:,.0f}")
 
-# Tombol download
+# Unduh Excel
 st.subheader("⬇️ Unduh Rekap Keuangan")
 if os.path.exists(FILE_PATH):
     with open(FILE_PATH, "rb") as f:
-        st.download_button("Download Excel", f, file_name="rekap_keuangan.xlsx")
-else:
-    st.info("Belum ada data untuk diunduh.")
-
-    with open(FILE_PATH, "rb") as f:
-        st.download_button("Download Excel", f, file_name="rekap_keuangan.xlsx")
+        st.download_button("📥 Download Excel", f, file_name="rekap_keuangan.xlsx")
 else:
     st.info("Belum ada data untuk diunduh.")
