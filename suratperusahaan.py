@@ -18,15 +18,15 @@ def generate_zip(template_file, data_rows):
         for row in data_rows:
             tpl = DocxTemplate(template_file)
 
-context = {
-    "Nama_Perusahaan": row.get("Nama_Perusahaan", ""),
-    "Nama_Direktur": row.get("Nama_Direktur", ""),
-    "Jabatan_Direktur": row.get("Jabatan_Direktur", ""),
-    "Kegiatan": row.get("Kegiatan", ""),
-    "Lokasi": row.get("Lokasi", ""),
-    "Jumlah_Sumbangan": row.get("Jumlah_Sumbangan", ""),
-    "Jenis_Barang": row.get("Jenis_Barang", "")
-}
+            context = {
+                "Nama_Perusahaan": row.get("Nama_Perusahaan", ""),
+                "Nama_Direktur": row.get("Nama_Direktur", ""),
+                "Jabatan_Direktur": row.get("Jabatan_Direktur", ""),
+                "Kegiatan": row.get("Kegiatan", ""),
+                "Lokasi": row.get("Lokasi", ""),
+                "Jumlah_Sumbangan": row.get("Jumlah_Sumbangan", ""),
+                "Jenis_Barang": row.get("Jenis_Barang", "")
+            }
 
             tpl.render(context)
 
@@ -59,6 +59,11 @@ if excel_file and template_file:
 
             st.download_button(
                 label="Download Semua Surat (.zip)",
+                data=hasil_zip,
+                file_name="semua_surat_csr.zip",
+                mime="application/zip"
+            )
+
                 data=hasil_zip,
                 file_name="semua_surat_csr.zip",
                 mime="application/zip"
