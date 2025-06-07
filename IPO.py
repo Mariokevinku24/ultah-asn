@@ -7,11 +7,12 @@ from datetime import date
 EXCEL_FILE = "data_perusahaan.xlsx"
 SHEET_NAME = "Data Perusahaan"
 
-st.set_page_config(page_title="Input ke Excel + Download", layout="centered")
-st.title("Form Input Data Perusahaan ke Excel")
+st.set_page_config(page_title="Input & Hapus Data Excel", layout="centered")
+st.title("📝 Form Data Perusahaan")
 
-# Form input
+# === FORM INPUT ===
 with st.form("form_perusahaan"):
+    st.subheader("➕ Tambah Data")
     nama = st.text_input("Nama Perusahaan")
     direktur = st.text_input("Direktur Utama")
     bidang = st.text_input("Bidang Perusahaan")
@@ -21,7 +22,6 @@ with st.form("form_perusahaan"):
     submitted = st.form_submit_button("Simpan ke Excel")
 
     if submitted:
-        # Data baru yang akan ditambahkan
         new_data = pd.DataFrame([{
             "Nama Perusahaan": nama,
             "Direktur Utama": direktur,
@@ -30,29 +30,46 @@ with st.form("form_perusahaan"):
             "Modal (Rp)": f"{modal:,.0f}".replace(",", ".")
         }])
 
-        # Cek apakah file Excel sudah ada
         if os.path.exists(EXCEL_FILE):
             existing_data = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME)
             combined_data = pd.concat([existing_data, new_data], ignore_index=True)
         else:
             combined_data = new_data
 
-        # Simpan gabungan ke Excel
         with pd.ExcelWriter(EXCEL_FILE, engine="openpyxl", mode="w") as writer:
             combined_data.to_excel(writer, index=False, sheet_name=SHEET_NAME)
 
-        st.success("✅ Data berhasil ditambahkan ke Excel!")
+        st.success("✅ Data berhasil ditambahkan!")
 
-# Tampilkan isi Excel saat ini jika ada
+# === TAMPILKAN DAN HAPUS DATA ===
 if os.path.exists(EXCEL_FILE):
-    st.subheader("📁 Isi Excel Saat Ini")
-    current_df = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME)
-    st.dataframe(current_df, use_container_width=True)
+    st.subheader("📋 Data Tersimpan di Excel")
+    df = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME)
 
-    # Siapkan file untuk diunduh
+    # Checkbox per baris
+    st.markdown("Pilih baris yang ingin dihapus:")
+    rows_to_delete = []
+    for i, row in df.iterrows():
+        label = f"{row['Nama Perusahaan']} - {row['Direktur Utama']} - {row['Tanggal Berdiri']}"
+        if st.checkbox(label, key=f"row_{i}"):
+            rows_to_delete.append(i)
+
+    if st.button("🗑️ Hapus Data Terpilih"):
+        if rows_to_delete:
+            df = df.drop(index=rows_to_delete).reset_index(drop=True)
+            with pd.ExcelWriter(EXCEL_FILE, engine="openpyxl", mode="w") as writer:
+                df.to_excel(writer, index=False, sheet_name=SHEET_NAME)
+            st.success(f"✅ {len(rows_to_delete)} data berhasil dihapus!")
+        else:
+            st.warning("⚠️ Belum ada baris yang dipilih untuk dihapus.")
+
+    # Tampilkan tabel setelah dihapus atau tanpa aksi
+    st.dataframe(df, use_container_width=True)
+
+    # Tombol download
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        current_df.to_excel(writer, index=False, sheet_name=SHEET_NAME)
+        df.to_excel(writer, index=False, sheet_name=SHEET_NAME)
     output.seek(0)
 
     st.download_button(
@@ -62,4 +79,5 @@ if os.path.exists(EXCEL_FILE):
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 else:
-    st.info("📂 Belum ada data disimpan ke Excel.")
+    st.info("📂 Belum ada data di Excel.")
+
