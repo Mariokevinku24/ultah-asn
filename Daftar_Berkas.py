@@ -1,91 +1,67 @@
 import streamlit as st
 import pandas as pd
 from docxtpl import DocxTemplate
-from docx import Document
 from io import BytesIO
-import zipfile
-import re
 
-st.title("Generator Banyak Surat CSR (ZIP)")
+st.set_page_config(page_title="Daftar Arsip & Berkas", layout="wide")
+st.title("📁 Aplikasi Daftar Arsip dan Isi Berkas")
 
-# Upload file
-excel_file = st.file_uploader("📄 Upload Excel (daftar perusahaan)", type="xlsx")
-template_file = st.file_uploader("📄 Upload Template Surat (Word .docx)", type="docx")
+# Upload file Excel (opsional)
+uploaded_file = st.file_uploader("📥 Upload Excel Daftar Berkas", type="xlsx")
 
-# Fungsi membuat ZIP berisi surat-surat
-def generate_zip(template_bytes, data_rows):
-    zip_buffer = BytesIO()
-    with zipfile.ZipFile(zip_buffer, "w") as zip_file:
-        for row in data_rows:
-            tpl = DocxTemplate(BytesIO(template_bytes))
+# Contoh template form input
+columns_form = [
+    "Nomor Berkas", "Kode Klasifikasi", "Unit Pengolah", "Uraian Berkas",
+    "Tahun", "Tingkat Perkembangan", "Jumlah", "Lokasi Simpan", "Status", "Keterangan"
+]
 
-            context = {
-                "Nama_Perusahaan": row.get("Nama_Perusahaan", ""),
-                "Nama_Direktur": row.get("Nama_Direktur", ""),
-                "Jabatan_Direktur": row.get("Jabatan_Direktur", ""),
-                "Kegiatan": row.get("Kegiatan", ""),
-                "Lokasi": row.get("Lokasi", ""),
-                "Jumlah_Sumbangan": row.get("Jumlah_Sumbangan", ""),
-                "Jenis_Barang": row.get("Jenis_Barang", "")
-            }
+# Jika file di-upload
+if uploaded_file:
+    df = pd.read_excel(uploaded_file)
+    st.success("📄 File berhasil dibaca")
+else:
+    st.info("📌 Atau isi data daftar berkas secara manual di bawah ini")
+    df = pd.DataFrame(columns=columns_form)
+    new_row = {}
+    for col in columns_form:
+        new_row[col] = st.text_input(f"{col}", value="")
 
-            tpl.render(context)
+    if st.button("➕ Tambahkan ke Daftar"):
+        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
 
-            doc_io = BytesIO()
-            tpl.save(doc_io)
-            doc_io.seek(0)
+# Tampilkan tabel
+st.subheader("📋 Data Daftar Berkas")
+edited_df = st.data_editor(df, num_rows="dynamic")
 
-            safe_nama = re.sub(r"[^\w\s-]", "", context["Nama_Perusahaan"]).strip().replace(" ", "_")
-            filename = f"Surat_{safe_nama}.docx"
-            zip_file.writestr(filename, doc_io.read())
+# Input identitas umum
+st.subheader("🧾 Informasi Umum")
+satker = st.text_input("Satuan Kerja", "Dinas Lingkungan Hidup")
+unit_pengolah = st.text_input("Unit Pengolah", "Sekretariat")
 
-    zip_buffer.seek(0)
-    return zip_buffer
+# Upload template Word
+template_file = st.file_uploader("📄 Upload Template Word Daftar Berkas", type="docx")
 
-# Fungsi untuk preview isi surat pertama
-def preview_docx_from_template(template_bytes, context):
-    tpl = DocxTemplate(BytesIO(template_bytes))
-    tpl.render(context)
-
-    doc_io = BytesIO()
-    tpl.save(doc_io)
-    doc_io.seek(0)
-
-    doc = Document(doc_io)
-    lines = [p.text for p in doc.paragraphs]
-    return "\n".join(lines)
-
-# Logika utama aplikasi
-if excel_file and template_file:
-    df = pd.read_excel(excel_file).fillna("")
-    
-    required_columns = ["Nama_Perusahaan"]
-    missing_cols = [col for col in required_columns if col not in df.columns]
-    
-    if missing_cols:
-        st.error(f"Kolom berikut wajib ada di Excel: {', '.join(missing_cols)}")
+# Generate Word
+if st.button("📄 Buat Dokumen Word"):
+    if template_file is None:
+        st.warning("Harap upload template Word terlebih dahulu.")
     else:
-        df_valid = df[df["Nama_Perusahaan"].str.strip() != ""]
-        
-        if df_valid.empty:
-            st.error("Tidak ada data perusahaan yang valid. Kolom 'Nama_Perusahaan' wajib diisi.")
-        else:
-            data_rows = df_valid.to_dict(orient="records")
-            template_bytes = template_file.read()
+        context = {
+            "Satuan_Kerja": satker,
+            "Unit_Pengolah": unit_pengolah,
+            "daftar_berkas": edited_df.to_dict(orient="records")
+        }
 
-            # Tampilkan preview surat pertama
-            st.subheader("📄 Preview Isi Surat Pertama:")
-            preview_text = preview_docx_from_template(template_bytes, data_rows[0])
-            st.text_area("Preview Surat", preview_text, height=500)
+        tpl = DocxTemplate(template_file)
+        tpl.render(context)
 
-            # Tombol buat surat
-            if st.button("📝 Buat dan Unduh Semua Surat"):
-                with st.spinner("Membuat semua surat..."):
-                    hasil_zip = generate_zip(template_bytes, data_rows)
+        doc_io = BytesIO()
+        tpl.save(doc_io)
+        doc_io.seek(0)
 
-                st.download_button(
-                    label="📦 Download Semua Surat (.zip)",
-                    data=hasil_zip,
-                    file_name="semua_surat_csr.zip",
-                    mime="application/zip"
-                )
+        st.download_button(
+            label="📥 Download Dokumen Word",
+            data=doc_io,
+            file_name="daftar_berkas.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
