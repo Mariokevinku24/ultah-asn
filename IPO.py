@@ -47,4 +47,3 @@ if os.path.exists(EXCEL_FILE):
     st.subheader("📁 Isi Excel Saat Ini")
     current_df = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME)
     st.dataframe(current_df, use_container_width=True)
-
