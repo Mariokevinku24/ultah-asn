@@ -5,3 +5,4 @@ docxtpl
 mammoth
 num2words
 graphviz
+openpyxl
