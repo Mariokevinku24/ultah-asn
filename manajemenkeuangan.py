@@ -6,15 +6,15 @@ from openpyxl.styles import numbers
 
 FILE_PATH = "catatan_keuangan.xlsx"
 
-# Fungsi untuk menyimpan dengan format tanggal
+# Simpan data dengan format tanggal
 def save_data(df):
     with pd.ExcelWriter(FILE_PATH, engine='openpyxl') as writer:
         df.to_excel(writer, index=False)
         worksheet = writer.sheets['Sheet1']
-        for cell in worksheet['A'][1:]:  # Format kolom tanggal
+        for cell in worksheet['A'][1:]:  # kolom tanggal
             cell.number_format = numbers.FORMAT_DATE_DDMMYYYY
 
-# Fungsi untuk load dan validasi kolom
+# Load data dan validasi kolom
 def load_data():
     kolom_default = ["Tanggal", "Keterangan", "Jumlah", "Uang di Tabungan", "Uang di Tangan"]
     if os.path.exists(FILE_PATH):
@@ -28,14 +28,15 @@ def load_data():
         save_data(df)
         return df
 
-# Setup halaman & session
+# Setup halaman
 st.set_page_config(page_title="Manajemen Keuangan", layout="centered")
 st.title("💰 Aplikasi Manajemen Keuangan Pribadi")
 
+# Session state
 if "saldo_awal" not in st.session_state:
     st.session_state["saldo_awal"] = 0
-if "hapus_index" not in st.session_state:
-    st.session_state["hapus_index"] = None
+if "hapus_id" not in st.session_state:
+    st.session_state["hapus_id"] = None
 
 # Sidebar saldo
 st.sidebar.header("🔧 Pengaturan Awal")
@@ -53,11 +54,7 @@ with st.form("form_pengeluaran"):
 
     if submit and (jumlah > 0 or tunai > 0):
         df = load_data()
-
-        # Hitung tabungan: Saldo awal - jumlah - tunai
-        total_pengeluaran = jumlah + tunai
-        tabungan = max(saldo_awal - total_pengeluaran, 0)
-
+        tabungan = max(saldo_awal - jumlah - tunai, 0)
         new_row = {
             "Tanggal": tanggal,
             "Keterangan": keterangan,
@@ -68,8 +65,9 @@ with st.form("form_pengeluaran"):
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
         save_data(df)
         st.success("✅ Data berhasil disimpan!")
+        st.experimental_rerun()
 
-# Load & konversi tanggal
+# Load data dan konversi tanggal
 df = load_data()
 df["Tanggal"] = pd.to_datetime(df["Tanggal"]).dt.date
 
@@ -80,6 +78,7 @@ filtered_data = df[df["Tanggal"] == tanggal_filter]
 
 # Tampilkan data
 st.markdown(f"### 📋 Data pada {tanggal_filter.strftime('%d %B %Y')}")
+hapus_index = None
 if not filtered_data.empty:
     for idx, row in filtered_data.iterrows():
         st.markdown(f"""
@@ -89,17 +88,17 @@ if not filtered_data.empty:
         - Tunai: Rp {row['Uang di Tangan']:,.0f}
         """)
         if st.button("🗑 Hapus", key=f"hapus_{idx}"):
-            st.session_state["hapus_index"] = df.index[df["Tanggal"] == tanggal_filter][idx]
+            st.session_state["hapus_id"] = row.name
             st.experimental_rerun()
 else:
     st.info("Belum ada data untuk tanggal tersebut.")
 
-# Hapus data
-if st.session_state.get("hapus_index") is not None:
-    df = df.drop(index=st.session_state["hapus_index"])
+# Hapus data jika diperlukan
+if st.session_state.get("hapus_id") is not None:
+    df = df.drop(index=st.session_state["hapus_id"])
     df.reset_index(drop=True, inplace=True)
     save_data(df)
-    st.session_state["hapus_index"] = None
+    st.session_state["hapus_id"] = None
     st.success("✅ Data berhasil dihapus.")
     st.experimental_rerun()
 
@@ -117,11 +116,10 @@ col3.metric("Total Tunai", f"Rp {total_tunai:,.0f}")
 
 st.success(f"💡 Sisa Saldo: Rp {sisa_saldo:,.0f}")
 
-# Tombol unduh
+# Unduh Excel
 st.subheader("⬇️ Unduh Rekap Keuangan")
 if os.path.exists(FILE_PATH):
     with open(FILE_PATH, "rb") as f:
         st.download_button("📥 Download Excel", f, file_name="rekap_keuangan.xlsx")
 else:
     st.info("Belum ada data untuk diunduh.")
-
