@@ -4,4 +4,4 @@ openpyxl
 docxtpl
 mammoth
 num2words
-docx2pdf
+pypandoc
