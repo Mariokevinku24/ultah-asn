@@ -4,3 +4,4 @@ openpyxl
 docxtpl
 mammoth
 num2words
+graphviz
