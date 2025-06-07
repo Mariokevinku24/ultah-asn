@@ -2,6 +2,36 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
+# --- SISTEM LOGIN SEDERHANA ---
+st.set_page_config(page_title="Ulang Tahun DLH", page_icon="🎂")
+
+# Daftar username dan password (bisa ditambah)
+users = {
+    "admin": "ultah123",
+    "noni": "dlh2025",
+    "lamria": "lingkungan"
+}
+
+# Form login
+st.sidebar.title("🔐 Login")
+username = st.sidebar.text_input("Username")
+password = st.sidebar.text_input("Password", type="password")
+login_btn = st.sidebar.button("Login")
+
+# Validasi login
+if login_btn:
+    if username in users and users[username] == password:
+        st.session_state["logged_in"] = True
+    else:
+        st.error("Username atau password salah.")
+
+# Cegah akses jika belum login
+if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
+    st.warning("Silakan login terlebih dahulu di sidebar.")
+    st.stop()
+
+# --- APLIKASI UTAMA SETELAH LOGIN BERHASIL ---
+
 # Data ulang tahun
 data = [
     ("Sortauli Triana Manurung, ST", "1970-01-30"),
