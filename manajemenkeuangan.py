@@ -3,27 +3,33 @@ import pandas as pd
 import datetime
 import os
 
-# Path file Excel
+# Lokasi file Excel
 FILE_PATH = "catatan_keuangan.xlsx"
 
-# Load atau buat file baru
+# Fungsi untuk load dan validasi kolom
 def load_data():
+    kolom_default = ["Tanggal", "Keterangan", "Jumlah", "Uang di Tabungan", "Uang di Tangan"]
     if os.path.exists(FILE_PATH):
-        return pd.read_excel(FILE_PATH)
+        df = pd.read_excel(FILE_PATH)
+        # Tambah kolom yang hilang
+        for kolom in kolom_default:
+            if kolom not in df.columns:
+                df[kolom] = 0
+        return df[kolom_default]
     else:
-        df = pd.DataFrame(columns=["Tanggal", "Keterangan", "Jumlah", "Uang di Tabungan", "Uang di Tangan"])
+        df = pd.DataFrame(columns=kolom_default)
         df.to_excel(FILE_PATH, index=False)
         return df
 
-# Simpan ke file Excel
+# Fungsi simpan
 def save_data(df):
     df.to_excel(FILE_PATH, index=False)
 
-# Judul Aplikasi
+# Konfigurasi halaman
 st.set_page_config(page_title="Manajemen Keuangan", layout="centered")
 st.title("💰 Aplikasi Manajemen Keuangan Pribadi")
 
-# Sidebar untuk saldo awal
+# Sidebar: saldo awal
 st.sidebar.header("🔧 Pengaturan Awal")
 if "saldo_awal" not in st.session_state:
     st.session_state["saldo_awal"] = 0
@@ -31,10 +37,10 @@ if "saldo_awal" not in st.session_state:
 saldo_awal = st.sidebar.number_input("Saldo Awal (Rp)", min_value=0, value=st.session_state["saldo_awal"])
 st.session_state["saldo_awal"] = saldo_awal
 
-# Form input
+# Form input pengeluaran
 st.subheader("📝 Catat Pengeluaran")
 with st.form("form_pengeluaran"):
-    keterangan = st.text_input("Keterangan", placeholder="Contoh: Makan siang")
+    keterangan = st.text_input("Keterangan", placeholder="Contoh: Beli pulsa")
     jumlah = st.number_input("Jumlah Pengeluaran (Rp)", min_value=0)
     tabungan = st.number_input("Uang Masuk ke Tabungan (Rp)", min_value=0)
     tunai = st.number_input("Uang Disimpan di Tangan (Rp)", min_value=0)
@@ -54,7 +60,7 @@ with st.form("form_pengeluaran"):
         save_data(df)
         st.success("✅ Data berhasil disimpan!")
 
-# Load dan proses data
+# Load data & konversi tanggal
 df = load_data()
 df["Tanggal"] = pd.to_datetime(df["Tanggal"]).dt.date
 
@@ -82,7 +88,7 @@ if not filtered_data.empty:
 else:
     st.info("Belum ada data untuk tanggal tersebut.")
 
-# Ringkasan Total
+# Ringkasan
 st.subheader("📊 Ringkasan Total")
 total_pengeluaran = df["Jumlah"].sum()
 total_tabungan = df["Uang di Tabungan"].sum()
@@ -96,7 +102,7 @@ col3.metric("Total Tunai", f"Rp {total_tunai:,.0f}")
 
 st.success(f"💡 Sisa Saldo: Rp {sisa_saldo:,.0f}")
 
-# Unduh Excel
+# Tombol download Excel
 st.subheader("⬇️ Unduh Rekap Keuangan")
 if os.path.exists(FILE_PATH):
     with open(FILE_PATH, "rb") as f:
