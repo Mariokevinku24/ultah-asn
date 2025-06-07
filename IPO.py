@@ -41,32 +41,13 @@ with st.form("form_perusahaan"):
 
         st.success("✅ Data berhasil ditambahkan!")
 
-# === TAMPILKAN DAN HAPUS DATA ===
+# === TAMPILKAN DATA DAN DOWNLOAD ===
 if os.path.exists(EXCEL_FILE):
-    st.subheader("📋 Data Tersimpan di Excel")
+    st.subheader("📋 Data Tersimpan")
     df = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME)
-
-    # Checkbox per baris
-    st.markdown("Pilih baris yang ingin dihapus:")
-    rows_to_delete = []
-    for i, row in df.iterrows():
-        label = f"{row['Nama Perusahaan']} - {row['Direktur Utama']} - {row['Tanggal Berdiri']}"
-        if st.checkbox(label, key=f"row_{i}"):
-            rows_to_delete.append(i)
-
-    if st.button("🗑️ Hapus Data Terpilih"):
-        if rows_to_delete:
-            df = df.drop(index=rows_to_delete).reset_index(drop=True)
-            with pd.ExcelWriter(EXCEL_FILE, engine="openpyxl", mode="w") as writer:
-                df.to_excel(writer, index=False, sheet_name=SHEET_NAME)
-            st.success(f"✅ {len(rows_to_delete)} data berhasil dihapus!")
-        else:
-            st.warning("⚠️ Belum ada baris yang dipilih untuk dihapus.")
-
-    # Tampilkan tabel setelah dihapus atau tanpa aksi
     st.dataframe(df, use_container_width=True)
 
-    # Tombol download
+    # Tombol Download Excel
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name=SHEET_NAME)
@@ -78,6 +59,25 @@ if os.path.exists(EXCEL_FILE):
         file_name=EXCEL_FILE,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
+    # === HAPUS DATA (pindah ke bawah) ===
+    with st.expander("🗑️ Hapus Data Tidak Sesuai"):
+        st.markdown("Centang data yang ingin dihapus:")
+        rows_to_delete = []
+        for i, row in df.iterrows():
+            label = f"{row['Nama Perusahaan']} - {row['Direktur Utama']} - {row['Tanggal Berdiri']}"
+            if st.checkbox(label, key=f"hapus_{i}"):
+                rows_to_delete.append(i)
+
+        if st.button("🗑️ Hapus Data Terpilih"):
+            if rows_to_delete:
+                df = df.drop(index=rows_to_delete).reset_index(drop=True)
+                with pd.ExcelWriter(EXCEL_FILE, engine="openpyxl", mode="w") as writer:
+                    df.to_excel(writer, index=False, sheet_name=SHEET_NAME)
+                st.success(f"✅ {len(rows_to_delete)} data berhasil dihapus!")
+                st.experimental_rerun()
+            else:
+                st.warning("⚠️ Belum ada data yang dipilih untuk dihapus.")
 else:
     st.info("📂 Belum ada data di Excel.")
 
