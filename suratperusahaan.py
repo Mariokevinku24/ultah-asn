@@ -1,57 +1,44 @@
 import streamlit as st
 import pandas as pd
-from docx import Document
+from docxtpl import DocxTemplate
 from io import BytesIO
 
-# Fungsi mengganti placeholder di template
 def generate_surat(template_path, nama_perusahaan_list):
-    # Load template
-    doc_template = Document(template_path)
-    
-    # Simpan semua surat ke satu dokumen baru
-    final_doc = Document()
+    output_doc = BytesIO()
+    combined_doc = None
 
-    for nama in nama_perusahaan_list:
-        # Clone isi template untuk setiap perusahaan
-        temp_doc = Document(template_path)
-        for para in temp_doc.paragraphs:
-            if "{{Nama_Perusahaan}}" in para.text:
-                para.text = para.text.replace("{{Nama_Perusahaan}}", nama)
-
-        # Tambahkan ke dokumen akhir
-        for element in temp_doc.element.body:
-            final_doc.element.body.append(element)
+    for i, nama in enumerate(nama_perusahaan_list):
+        tpl = DocxTemplate(template_path)
+        context = {"Nama_Perusahaan": nama}
+        tpl.render(context)
         
-        # Tambahkan page break jika bukan yang terakhir
-        final_doc.add_page_break()
+        temp_stream = BytesIO()
+        tpl.save(temp_stream)
+        temp_stream.seek(0)
 
-    return final_doc
+        # Tambahkan ke dokumen gabungan
+        if combined_doc is None:
+            combined_doc = DocxTemplate(temp_stream)
+        else:
+            doc = DocxTemplate(temp_stream)
+            for element in doc.docx.element.body:
+                combined_doc.docx.element.body.append(element)
+            combined_doc.docx.element.body.append(doc.docx.element.body[-1])  # Optional: tambah pemisah
 
-st.title("Generator Surat CSR per Perusahaan")
+    combined_doc.save(output_doc)
+    output_doc.seek(0)
+    return output_doc
 
-# Upload file Excel
-uploaded_excel = st.file_uploader("Upload file Excel dengan daftar perusahaan", type=['xlsx'])
+st.title("Generator Surat CSR Format Rapi")
 
-# Upload template Word
-uploaded_template = st.file_uploader("Upload Template Surat (.docx)", type=['docx'])
+excel_file = st.file_uploader("Upload Excel (daftar perusahaan)", type="xlsx")
+template_file = st.file_uploader("Upload Template Surat (Word .docx)", type="docx")
 
-if uploaded_excel and uploaded_template:
-    df = pd.read_excel(uploaded_excel)
-    
-    # Asumsikan kolom pertama berisi nama perusahaan
-    nama_kolom = df.columns[0]
-    daftar_perusahaan = df[nama_kolom].dropna().tolist()
+if excel_file and template_file:
+    df = pd.read_excel(excel_file)
+    nama_perusahaan = df.iloc[:, 0].dropna().tolist()
 
     if st.button("Buat Surat"):
-        hasil_doc = generate_surat(uploaded_template, daftar_perusahaan)
+        hasil = generate_surat(template_file, nama_perusahaan)
+        st.download_button("Download Surat Gabungan", hasil, file_name="surat_csr.docx")
 
-        buffer = BytesIO()
-        hasil_doc.save(buffer)
-        buffer.seek(0)
-
-        st.download_button(
-            label="Download File Word",
-            data=buffer,
-            file_name="surat_perusahaan_CSR.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
