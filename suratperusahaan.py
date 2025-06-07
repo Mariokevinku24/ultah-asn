@@ -64,7 +64,3 @@ if excel_file and template_file:
                 mime="application/zip"
             )
 
-                data=hasil_zip,
-                file_name="semua_surat_csr.zip",
-                mime="application/zip"
-            )
