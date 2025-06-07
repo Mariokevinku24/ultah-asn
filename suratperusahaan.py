@@ -18,7 +18,7 @@ def generate_zip(template_file, data_rows):
 
             # Ambil data dengan nilai default jika tidak ada
             context = {
-                "Nama_Perusahaan": row.get("Nama_Perusahaan", "N/A"),
+                "Nama_Perusahaan": row.get("Nama_Perusahaan", ""),
                 "Nama_Direktur": row.get("Nama_Direktur", ""),  # Kosong jika tidak ada
                 "Jabatan_Direktur": row.get("Jabatan_Direktur", "")  # Kosong jika tidak ada
             }
