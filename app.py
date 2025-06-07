@@ -25,7 +25,7 @@ data = [
     ("Drs. Heady Habeahan", "1968-07-06"),
     ("Julius Karo Sekali, S.Sos", "1974-07-08"),
     ("Rizky Ananda S. Mat.", "1997-07-24"),
-    ("Kevin Jeremy Dirgantara Pakpahan, S. Mat.", "2001-09-26"),
+    ("Kevin Jeremy Dirgantara Pakpahan, S. Mat.", "2001-06-07"),
     ("Syahroni Harahap, ST", "1970-10-10"),
     ("Jamiah, S.Si, MM", "1980-10-10"),
     ("Noni Bahanoer, SE", "1983-10-13"),
