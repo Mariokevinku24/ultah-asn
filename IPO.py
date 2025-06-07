@@ -1,17 +1,15 @@
 import streamlit as st
 import pandas as pd
-from io import BytesIO
+import os
 from datetime import date
 
-st.set_page_config(page_title="Input Data Perusahaan", layout="centered")
+EXCEL_FILE = "data_perusahaan.xlsx"
+SHEET_NAME = "Data Perusahaan"
 
-st.title("Form Input Data Perusahaan")
+st.set_page_config(page_title="Input ke Excel Eksisting", layout="centered")
+st.title("Form Input Data Perusahaan ke Excel")
 
-# Inisialisasi session_state untuk menyimpan banyak data
-if "data_perusahaan" not in st.session_state:
-    st.session_state.data_perusahaan = []
-
-# Form input
+# Input form
 with st.form("form_perusahaan"):
     nama = st.text_input("Nama Perusahaan")
     direktur = st.text_input("Direktur Utama")
@@ -19,36 +17,34 @@ with st.form("form_perusahaan"):
     tanggal = st.date_input("Tanggal Perusahaan Berdiri", value=date.today())
     modal = st.number_input("Modal Tahun Berjalan (Rp)", min_value=0, step=1)
 
-    submitted = st.form_submit_button("Tambah Data")
+    submitted = st.form_submit_button("Simpan ke Excel")
 
     if submitted:
-        st.session_state.data_perusahaan.append({
+        # Data baru yang akan ditambahkan
+        new_data = pd.DataFrame([{
             "Nama Perusahaan": nama,
             "Direktur Utama": direktur,
             "Bidang Perusahaan": bidang,
             "Tanggal Berdiri": tanggal.strftime("%d-%m-%Y"),
             "Modal (Rp)": f"{modal:,.0f}".replace(",", ".")
-        })
-        st.success("✅ Data berhasil ditambahkan!")
+        }])
 
-# Tampilkan tabel data
-if st.session_state.data_perusahaan:
-    df = pd.DataFrame(st.session_state.data_perusahaan)
-    st.subheader("📊 Data Perusahaan Terkumpul")
-    st.dataframe(df, use_container_width=True)
+        # Cek apakah file sudah ada
+        if os.path.exists(EXCEL_FILE):
+            existing_data = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME)
+            combined_data = pd.concat([existing_data, new_data], ignore_index=True)
+        else:
+            combined_data = new_data
 
-    # Export ke Excel
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name="Data Perusahaan")
-    output.seek(0)
+        # Simpan ke Excel
+        with pd.ExcelWriter(EXCEL_FILE, engine="openpyxl", mode="w") as writer:
+            combined_data.to_excel(writer, index=False, sheet_name=SHEET_NAME)
 
-    st.download_button(
-        label="📥 Unduh Excel",
-        data=output,
-        file_name="Data_Perusahaan_Terkumpul.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-else:
-    st.info("Belum ada data perusahaan yang dimasukkan.")
+        st.success(f"✅ Data berhasil ditambahkan ke '{EXCEL_FILE}'.")
+
+# Tampilkan isi file jika sudah ada
+if os.path.exists(EXCEL_FILE):
+    st.subheader("📁 Isi Excel Saat Ini")
+    current_df = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME)
+    st.dataframe(current_df, use_container_width=True)
 
