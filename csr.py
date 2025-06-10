@@ -79,13 +79,35 @@ if excel_file and template_file:
             st.text_area("Preview Surat", preview_text, height=500)
 
             # Tombol buat surat
-            if st.button("📝 Buat dan Unduh Semua Surat"):
-                with st.spinner("Membuat semua surat..."):
-                    hasil_zip = generate_zip(template_bytes, data_rows)
+            st.subheader("📦 Download ZIP Berdasarkan Jenis Barang:")
+            grouped = df_valid.groupby("Jenis_Barang")
+
+            for jenis, group_df in grouped:
+                group_rows = group_df.to_dict(orient="records")
+                if not group_rows:
+                    continue
+
+                with st.spinner(f"Membuat ZIP untuk jenis barang: {jenis}"):
+                    hasil_zip = generate_zip(template_bytes, group_rows)
+
+                safe_jenis = re.sub(r"[^\w\s-]", "", jenis).strip().replace(" ", "_")
+                zip_name = f"Surat_CSR_{safe_jenis}.zip"
 
                 st.download_button(
-                    label="📦 Download Semua Surat (.zip)",
+                    label=f"📦 Download ZIP: {jenis}",
                     data=hasil_zip,
-                    file_name="semua_surat_csr.zip",
-                    mime="application/zip"
+                    file_name=zip_name,
+                    mime="application/zip",
+                    key=f"download_{safe_jenis}"
+                )
+
+            #if st.button("📝 Buat dan Unduh Semua Surat"):
+              #  with st.spinner("Membuat semua surat..."):
+                #    hasil_zip = generate_zip(template_bytes, data_rows)
+
+                #st.download_button(
+                #    label="📦 Download Semua Surat (.zip)",
+                    #data=hasil_zip,
+                    #file_name="semua_surat_csr.zip",
+                    #mime="application/zip"
                 )
