@@ -8,7 +8,7 @@ from io import BytesIO
 # Konfigurasi halaman
 st.set_page_config(layout="wide")
 st.title("📋 SOP - Penerbitan Izin Pemanfaatan Air Limbah")
-st.markdown("### Bagian Proses dan Pelaksana (dengan simbol visual sederhana)")
+st.markdown("### Bagian Proses dan Pelaksana")
 
 # Simbol
 kotak = "🟦"
