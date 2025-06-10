@@ -5,16 +5,16 @@ from docx.shared import Cm
 from docx.enum.section import WD_ORIENT
 from io import BytesIO
 
-# Konfigurasi halaman
+# Konfigurasi Streamlit
 st.set_page_config(layout="wide")
 st.title("📋 SOP - Penerbitan Izin Pemanfaatan Air Limbah")
-st.markdown("### Bagian Proses dan Pelaksana")
+st.markdown("### Bagian Proses dan Pelaksana (dengan simbol visual sederhana)")
 
 # Simbol
 kotak = "🟦"
 diamond = "🔷"
 
-# Data
+# Data SOP
 data = [
     ["1", "Pemohon ajukan permohonan", kotak, "", "", "", "", "", "Dokumen Permohonan", "15 menit", "Tanda Terima"],
     ["2", "Meneruskan surat", "", kotak, "", "", "", "", "Surat", "15 menit", "-"],
@@ -31,23 +31,25 @@ df = pd.DataFrame(data, columns=columns)
 # Tampilkan tabel di Streamlit
 st.markdown(df.to_html(escape=False, index=False), unsafe_allow_html=True)
 
-# Fungsi membuat dokumen Word
-def generate_word(df):
+# Fungsi untuk membuat dokumen Word (Legal Landscape)
+def generate_word_landscape(df):
     doc = Document()
 
-    # Ukuran Legal 21.59 cm x 35.56 cm
+    # Ubah ukuran halaman jadi Legal Landscape
     section = doc.sections[0]
-    section.page_height = Cm(35.56)
-    section.page_width = Cm(21.59)
-    section.orientation = WD_ORIENT.PORTRAIT
-    section.top_margin = Cm(2.5)
-    section.bottom_margin = Cm(2.5)
-    section.left_margin = Cm(2.5)
-    section.right_margin = Cm(2.5)
+    section.orientation = WD_ORIENT.LANDSCAPE
+    section.page_width = Cm(35.56)
+    section.page_height = Cm(21.59)
+    section.left_margin = Cm(2)
+    section.right_margin = Cm(2)
+    section.top_margin = Cm(1.5)
+    section.bottom_margin = Cm(1.5)
 
+    # Judul
     doc.add_heading("📋 SOP - Penerbitan Izin Pemanfaatan Air Limbah", level=1)
     doc.add_paragraph("Bagian Proses dan Pelaksana (dengan simbol visual sederhana)")
 
+    # Buat tabel
     table = doc.add_table(rows=1, cols=len(df.columns))
     table.style = 'Table Grid'
 
@@ -56,25 +58,25 @@ def generate_word(df):
     for i, col in enumerate(df.columns):
         hdr_cells[i].text = col
 
-    # Isi
+    # Isi tabel
     for _, row in df.iterrows():
         row_cells = table.add_row().cells
         for i, item in enumerate(row):
             row_cells[i].text = str(item)
 
-    # Simpan ke BytesIO
+    # Simpan ke buffer
     buffer = BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     return buffer
 
-# Tombol download Word
+# Tombol Download
 st.markdown("---")
-st.subheader("⬇️ Unduh Dokumen Word")
-word_file = generate_word(df)
+st.subheader("⬇️ Unduh Dokumen Word - Legal Landscape")
+word_file = generate_word_landscape(df)
 st.download_button(
-    label="📄 Download SOP (Legal Size - Word)",
+    label="📄 Download Word (Legal Landscape)",
     data=word_file,
-    file_name="SOP_Izin_Pemanfaatan_Air_Limbah_Legal.docx",
+    file_name="SOP_Izin_Landscape_Legal.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
