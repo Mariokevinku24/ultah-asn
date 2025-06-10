@@ -1,29 +1,30 @@
 import streamlit as st
-import graphviz
+import pandas as pd
 
 st.set_page_config(layout="wide")
-st.title("📄 Flowchart SOP - Proses Verifikasi dan Keputusan")
+st.title("📋 SOP - Penerbitan Izin Pemanfaatan Air Limbah")
 
-# Inisialisasi Diagram
-flowchart = graphviz.Digraph(format='png')
-flowchart.attr(rankdir='TB', size='10')
+st.markdown("### Bagian Proses dan Pelaksana (dengan simbol visual sederhana)")
 
-# Bentuk-bentuk proses
-flowchart.node('A', 'Verifikasi Berkas Administrasi', shape='box')
-flowchart.node('B', 'Tinjauan Lapangan', shape='box')
-flowchart.node('C', 'Lengkap?', shape='diamond')
-flowchart.node('D1', 'Kembalikan ke Pemohon', shape='box')
-flowchart.node('D2', 'Lanjutkan Penyusunan Izin', shape='parallelogram')
-flowchart.node('E', 'Rancang Keputusan Izin', shape='box')
+# Gunakan emoji atau simbol bentuk kotak 🔷 atau SVG inline
+kotak = "🟦"
+panah = "➡️"
+diamond = "🔷"
+dokumen = "📄"
 
-# Alur
-flowchart.edge('A', 'B')
-flowchart.edge('B', 'C')
-flowchart.edge('C', 'D1', label='Tidak')
-flowchart.edge('C', 'D2', label='Ya')
-flowchart.edge('D2', 'E')
+data = [
+    ["1", "Pemohon ajukan permohonan", kotak, "", "", "", "", "", "Dokumen Permohonan", "15 menit", "Tanda Terima"],
+    ["2", "Meneruskan surat", "", kotak, "", "", "", "", "Surat", "15 menit", "-"],
+    ["3", "Merancang surat persetujuan", "", "", kotak, "", "", "", "Draft", "2 hari", "Draft"],
+    ["4", "Telaah dan beri persetujuan", "", "", "", kotak, "", "", "Draft", "1 hari", "Persetujuan"],
+    ["5", "Verifikasi + Tinjauan Lapangan", "", kotak, "", "", "", "", "Form + Bukti Lapangan", "3 hari", "Berita Acara"],
+    ["6", "Cek kelengkapan", kotak, "", "", "", "", "", "📄", "15 menit", "✔️ atau ❌"],
+    ["7", "Keputusan Izin", "", kotak, "", "", diamond, "", "Naskah Izin", "1 hari", "Surat Izin"]
+]
 
-# Tampilkan diagram
-st.graphviz_chart(flowchart)
+columns = ["No", "Kegiatan", "Kasubbid Perizinan", "Kabid WASDAL", "Sekretaris", "Kaban", "Kabag Hukum", "Bupati", "Kelengkapan", "Waktu", "Output"]
+df = pd.DataFrame(data, columns=columns)
 
+# Tampilkan tabel
+st.markdown(df.to_html(escape=False, index=False), unsafe_allow_html=True)
 
