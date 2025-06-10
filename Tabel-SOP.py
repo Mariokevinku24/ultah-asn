@@ -1,35 +1,43 @@
 import streamlit as st
-import graphviz
+import pandas as pd
 
-st.set_page_config(page_title="Flowchart Izin Pemanfaatan Air Limbah", layout="wide")
+st.set_page_config(layout="wide")
+st.title("📄 SOP Penerbitan Izin Pemanfaatan Air Limbah untuk Aplikasi pada Tanah")
 
-st.title("📄 Flowchart Penerbitan Izin Pemanfaatan Air Limbah untuk Aplikasi pada Tanah")
+st.markdown("#### Tabel Proses SOP (Bagian 1 – Pengajuan dan Evaluasi)")
 
-st.markdown("""
-Diagram di bawah ini menggambarkan alur proses sesuai SOP.
-""")
+# Data kegiatan
+data = [
+    ["1", "Pemohon ajukan permohonan + dokumen lingkungan", "✅", "", "", "", "", "", "Surat Permohonan + UKL-UPL/AMDAL", "15 menit", "Tanda Terima"],
+    ["2", "Meneruskan surat", "", "✅", "", "", "", "", "Surat dari Berkas", "15 menit", "-"],
+    ["3", "Merancang surat persetujuan", "", "", "✅", "", "", "", "Draft", "2 hari", "Draft"],
+    ["4", "Menelaah dan beri persetujuan", "", "", "", "✅", "", "", "Draft", "1 hari", "Surat Persetujuan"],
+    ["5", "Pemohon ajukan permohonan pasca penilaian", "✅", "", "", "", "", "", "Surat Permohonan + Hasil Penilaian", "15 menit", "Disposisi"],
+    ["6", "Verifikasi dokumen, tinjauan lapangan", "", "✅", "", "", "", "", "Surat permohonan & berkas", "3 hari", "Berita Acara"],
+    ["7", "Verifikasi akhir permohonan", "✅", "", "", "", "", "", "Surat permohonan & berkas", "15 menit", "Tanda Terima"]
+]
 
-# Diagram menggunakan Graphviz
-flowchart = graphviz.Digraph()
+# Konversi ke DataFrame
+columns = ["No", "Kegiatan", "Kasubbid Perizinan", "Kabid WASDAL", "Sekretaris", "Kaban", "Kabag Hukum", "Bupati", "Kelengkapan", "Waktu", "Output"]
+df = pd.DataFrame(data, columns=columns)
 
-# Tambahkan node (tahapan proses)
-flowchart.node("A", "1. Pemohon Ajukan Permohonan")
-flowchart.node("B", "2. Meneruskan Surat")
-flowchart.node("C", "3. Merancang Surat Persetujuan")
-flowchart.node("D", "4. Menelaah & Menyetujui")
-flowchart.node("E", "5. Permohonan Lanjutan (setelah penilaian)")
-flowchart.node("F", "6. Verifikasi Dokumen & Tinjauan Lapangan")
-flowchart.node("G", "7. Verifikasi Administratif Lanjutan")
+# Tampilkan tabel dengan checkbox visual (HTML bisa ditambahkan juga jika diinginkan)
+st.dataframe(df, use_container_width=True)
 
-# Hubungkan node
-flowchart.edge("A", "B")
-flowchart.edge("B", "C")
-flowchart.edge("C", "D")
-flowchart.edge("D", "E")
-flowchart.edge("E", "F")
-flowchart.edge("F", "G")
+st.markdown("---")
+st.markdown("#### Tabel Proses SOP (Bagian 2 – Penyusunan dan Penerbitan Izin)")
 
-# Tampilkan diagram
-st.graphviz_chart(flowchart)
+data2 = [
+    ["10", "Membuat rancangan keputusan izin", "", "✅", "", "", "", "", "", "1 hari", "-"],
+    ["11", "Koordinasi rancangan keputusan", "", "", "✅", "", "", "", "Draft", "2 hari", "Draft"],
+    ["12", "Telaah dan tanda tangan izin", "", "", "", "✅", "", "", "Draft", "5 hari", "Draft"],
+    ["13", "Teruskan ke Bupati untuk tanda tangan", "", "", "", "", "✅", "", "Draft", "1 hari", "Surat Izin"],
+    ["14", "Serahkan izin ke Pemrakarsa", "✅", "", "", "", "", "", "Surat Izin", "15 menit", "Tanda Terima"]
+]
 
-st.caption("Sumber: SOP Dinas Lingkungan Hidup – Penerbitan Izin Aplikasi Air Limbah ke Tanah")
+df2 = pd.DataFrame(data2, columns=columns)
+st.dataframe(df2, use_container_width=True)
+
+st.caption("Sumber: SOP Dinas Lingkungan Hidup – Prosedur Penerbitan Izin Air Limbah ke Tanah")
+
+
