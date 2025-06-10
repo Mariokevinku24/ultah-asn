@@ -1,0 +1,8 @@
+streamlit
+pandas
+openpyxl
+docxtpl
+mammoth
+num2words
+graphviz
+openpyxl
