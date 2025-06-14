@@ -2,7 +2,9 @@ import streamlit as st
 
 st.title("Form Penilaian Kantor Ramah Lingkungan")
 
+# Input Nama Instansi dan Penilai
 nama_instansi = st.text_input("Nama Instansi")
+nama_penilai = st.text_input("Nama Penilai")
 
 # Komponen dan Sub-komponen
 komponen = {
@@ -47,18 +49,26 @@ st.markdown("---")
 total_nilai = 0
 nilai_komponen = {}
 
+# Loop input untuk tiap sub-komponen
 for k, sub_komponen in komponen.items():
     st.subheader(k)
     for sub in sub_komponen:
-        nilai = st.number_input(f"Nilai untuk {sub}", min_value=0, max_value=10, step=1, key=f"{k}-{sub}")
+        nilai = st.number_input(
+            f"Nilai untuk {sub}",
+            min_value=0,
+            max_value=10,
+            step=1,
+            key=f"{k}-{sub}"
+        )
         nilai_komponen[f"{k} - {sub}"] = nilai
         total_nilai += nilai
 
+# Hasil Total & Kategori
 st.markdown("---")
 st.subheader("Total Nilai")
 st.write(f"**{total_nilai}**")
 
-# Kriteria akhir berdasarkan total
+# Kategori akhir berdasarkan skor total
 if total_nilai >= 81:
     kategori = "Sangat Baik"
 elif total_nilai >= 71:
@@ -73,3 +83,10 @@ else:
     kategori = "Belum Memadai"
 
 st.write(f"**Kategori: {kategori}**")
+
+# Tampilkan informasi instansi dan penilai
+st.markdown("---")
+st.subheader("Informasi Penilaian")
+st.write(f"**Nama Instansi:** {nama_instansi}")
+st.write(f"**Nama Penilai:** {nama_penilai}")
+
