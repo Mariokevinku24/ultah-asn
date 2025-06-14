@@ -7,4 +7,3 @@ num2words
 graphviz
 openpyxl
 sqllite3
-datetime
