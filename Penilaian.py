@@ -3,26 +3,23 @@ from datetime import datetime
 import pandas as pd
 import os
 
-# Konfigurasi halaman
 st.set_page_config(page_title="Penilaian Kantor Ramah Lingkungan", layout="wide")
 st.title("📋 Form Penilaian Kantor Ramah Lingkungan")
 
 CSV_FILE = "penilaian.csv"
+DELETE_PASSWORD = "admin123"  # Ganti sesuai kebutuhan
 
-# Fungsi untuk load data dari CSV
 def load_data():
     if os.path.exists(CSV_FILE):
         if os.path.getsize(CSV_FILE) == 0:
-            st.info("📂 File CSV kosong, memulai data baru.")
             return []
         try:
             return pd.read_csv(CSV_FILE).to_dict("records")
         except Exception as e:
-            st.error(f"❌ Gagal membaca CSV: {e}")
+            st.error(f"Gagal membaca CSV: {e}")
             return []
     return []
 
-# Fungsi simpan ke CSV
 def save_data(data):
     df = pd.DataFrame(data)
     df.to_csv(CSV_FILE, index=False)
@@ -31,7 +28,7 @@ def save_data(data):
 if "penilaian_data" not in st.session_state:
     st.session_state.penilaian_data = load_data()
 
-# FORM INPUT
+# Form penilaian
 with st.form("form_penilaian"):
     col1, col2 = st.columns(2)
     with col1:
@@ -118,11 +115,10 @@ with st.form("form_penilaian"):
         save_data(st.session_state.penilaian_data)
         st.success("✅ Penilaian berhasil disimpan!")
 
-# TAMPILKAN PENILAIAN YANG TERSIMPAN
 st.markdown("---")
 st.subheader("📑 Daftar Penilaian Tersimpan")
 
-# Tombol download CSV jika ada data
+# Tombol download
 if st.session_state.penilaian_data:
     df_download = pd.DataFrame(st.session_state.penilaian_data)
     st.download_button(
@@ -132,23 +128,26 @@ if st.session_state.penilaian_data:
         mime="text/csv"
     )
 
-# Tampilkan data tersimpan
+# Tampilkan data
 if st.session_state.penilaian_data:
     for i, data in enumerate(st.session_state.penilaian_data):
-        col1, col2 = st.columns([10, 1])
-        with col1:
-            st.markdown(f"""
-            **{i+1}. {data['Nama Instansi']}**  
-            Penilai: {data['Nama Penilai']}  
-            Nilai: **{data['Total Nilai']}**  
-            Kategori: **{data['Kategori']}**  
-            Waktu: {data['Waktu']}
+        with st.expander(f"📌 {i+1}. {data['Nama Instansi']} (oleh {data['Nama Penilai']})"):
+            st.write(f"""
+            **Total Nilai:** {data['Total Nilai']}  
+            **Kategori:** {data['Kategori']}  
+            **Waktu:** {data['Waktu']}
             """)
-        with col2:
-            if st.button("🗑️ Hapus", key=f"hapus_{i}"):
-                st.session_state.penilaian_data.pop(i)
-                save_data(st.session_state.penilaian_data)
-                st.experimental_rerun()
+
+            with st.form(f"hapus_form_{i}"):
+                password = st.text_input("Masukkan password untuk menghapus", type="password", key=f"pass_{i}")
+                hapus = st.form_submit_button("🗑️ Hapus Data Ini")
+                if hapus:
+                    if password == DELETE_PASSWORD:
+                        st.session_state.penilaian_data.pop(i)
+                        save_data(st.session_state.penilaian_data)
+                        st.success("✅ Data berhasil dihapus.")
+                        st.experimental_rerun()
+                    else:
+                        st.error("❌ Password salah. Data tidak dihapus.")
 else:
     st.info("Belum ada data penilaian disimpan.")
-
