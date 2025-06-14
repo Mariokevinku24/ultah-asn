@@ -60,7 +60,7 @@ with st.form("form_penilaian"):
         st.markdown(f"**{k}**")
         for sub in sub_komponen:
             nilai = st.number_input(
-                f"{sub}", min_value=0, max_value=10, step=1, key=f"{k}-{sub}"
+                f"{sub}", min_value=0, max_value=100, step=1, key=f"{k}-{sub}"
             )
             total_nilai += nilai
 
