@@ -3,14 +3,15 @@ from datetime import datetime
 import pandas as pd
 import os
 
+# Konfigurasi halaman
 st.set_page_config(page_title="Penilaian Kantor Ramah Lingkungan", layout="wide")
-st.title("Form Penilaian Kantor Ramah Lingkungan")
+st.title("📄 Form Penilaian Kantor Ramah Lingkungan")
 
 CSV_FILE = "penilaian.csv"
 
-# Fungsi untuk membaca data dari CSV
+# Fungsi untuk memuat data dari CSV
 def load_data():
-    if os.path.exists(CSV_FILE):
+    if os.path.exists(CSV_FILE) and os.path.getsize(CSV_FILE) > 0:
         return pd.read_csv(CSV_FILE).to_dict("records")
     return []
 
@@ -19,11 +20,11 @@ def save_data(data):
     df = pd.DataFrame(data)
     df.to_csv(CSV_FILE, index=False)
 
-# Inisialisasi session state
+# Inisialisasi data pada session_state
 if "penilaian_data" not in st.session_state:
     st.session_state.penilaian_data = load_data()
 
-# Komponen dan Sub-komponen
+# Komponen dan Sub-komponen penilaian
 komponen = {
     "1. Area Kantor": ["Sampah dan gulma", "Tempat Sampah"],
     "2. Drainase": ["Sampah, gulma dan sedimen"],
@@ -62,7 +63,7 @@ komponen = {
     ]
 }
 
-# Form Input Penilaian
+# Formulir input
 with st.form("form_penilaian"):
     col1, col2 = st.columns(2)
     with col1:
@@ -73,21 +74,16 @@ with st.form("form_penilaian"):
     nilai_sub = {}
     total_nilai = 0
 
-    for k, sub_komponen in komponen.items():
-        st.markdown(f"### {k}")
-        for sub in sub_komponen:
-            key = f"{k} - {sub}"
-            nilai = st.number_input(
-                sub,
-                min_value=0,
-                max_value=100,
-                step=10,
-                key=key
-            )
+    # Loop semua komponen dan sub-komponen
+    for judul, subkomponens in komponen.items():
+        st.markdown(f"### {judul}")
+        for sub in subkomponens:
+            key = f"{judul} - {sub}"
+            nilai = st.number_input(sub, min_value=0, max_value=100, step=10, key=key)
             nilai_sub[key] = nilai
             total_nilai += nilai
 
-    # Menentukan kategori berdasarkan total nilai
+    # Tentukan kategori berdasarkan total nilai
     if total_nilai >= 81:
         kategori = "Sangat Baik"
     elif total_nilai >= 71:
@@ -111,13 +107,13 @@ with st.form("form_penilaian"):
             "Total Nilai": total_nilai,
             "Kategori": kategori
         }
-        data_baru.update(nilai_sub)  # Tambahkan nilai per sub-komponen
+        data_baru.update(nilai_sub)
 
         st.session_state.penilaian_data.append(data_baru)
         save_data(st.session_state.penilaian_data)
         st.success("✅ Penilaian berhasil disimpan!")
 
-# Tampilkan Daftar Penilaian
+# Tampilkan daftar penilaian
 st.markdown("---")
 st.subheader("📋 Daftar Penilaian Tersimpan")
 
@@ -125,17 +121,26 @@ if st.session_state.penilaian_data:
     for i, data in enumerate(st.session_state.penilaian_data):
         col1, col2 = st.columns([10, 1])
         with col1:
-            st.write(f"""
-                **{i+1}. {data['Nama Instansi']}**  
-                Penilai: {data['Nama Penilai']}  
-                Total Nilai: {data['Total Nilai']}  
-                Kategori: {data['Kategori']}  
-                Waktu: {data['Waktu']}
+            st.markdown(f"""
+            **{i+1}. {data['Nama Instansi']}**  
+            🧑 Penilai: `{data['Nama Penilai']}`  
+            📊 Nilai: `{data['Total Nilai']}`  
+            🏅 Kategori: **{data['Kategori']}**  
+            🕒 Waktu: {data['Waktu']}
             """)
         with col2:
-            if st.button("Hapus", key=f"hapus_{i}"):
+            if st.button("🗑️ Hapus", key=f"hapus_{i}"):
                 st.session_state.penilaian_data.pop(i)
                 save_data(st.session_state.penilaian_data)
                 st.experimental_rerun()
 else:
     st.info("Belum ada data penilaian disimpan.")
+
+# Tombol untuk mengunduh CSV
+st.markdown("---")
+st.download_button(
+    label="⬇️ Unduh Semua Penilaian (CSV)",
+    data=pd.DataFrame(st.session_state.penilaian_data).to_csv(index=False),
+    file_name="penilaian.csv",
+    mime="text/csv"
+)
