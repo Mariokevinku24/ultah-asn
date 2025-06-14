@@ -1,12 +1,27 @@
 import streamlit as st
 from datetime import datetime
+import pandas as pd
+import os
 
 st.set_page_config(page_title="Penilaian Kantor Ramah Lingkungan", layout="wide")
 st.title("Form Penilaian Kantor Ramah Lingkungan")
 
-# Inisialisasi session state untuk menyimpan data penilaian
+CSV_FILE = "penilaian.csv"
+
+# Fungsi untuk load data dari file CSV
+def load_data():
+    if os.path.exists(CSV_FILE):
+        return pd.read_csv(CSV_FILE).to_dict("records")
+    return []
+
+# Fungsi untuk simpan data ke file CSV
+def save_data(data):
+    df = pd.DataFrame(data)
+    df.to_csv(CSV_FILE, index=False)
+
+# Inisialisasi session state
 if "penilaian_data" not in st.session_state:
-    st.session_state.penilaian_data = []
+    st.session_state.penilaian_data = load_data()
 
 # Form input
 with st.form("form_penilaian"):
@@ -81,19 +96,21 @@ with st.form("form_penilaian"):
     submitted = st.form_submit_button("Simpan Penilaian")
 
     if submitted and nama_instansi and nama_penilai:
-        st.session_state.penilaian_data.append({
+        data_baru = {
             "Waktu": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "Nama Instansi": nama_instansi,
             "Nama Penilai": nama_penilai,
             "Total Nilai": total_nilai,
             "Kategori": kategori
-        })
+        }
+        st.session_state.penilaian_data.append(data_baru)
+        save_data(st.session_state.penilaian_data)
         st.success("Penilaian berhasil disimpan!")
 
 st.markdown("---")
 st.subheader("📋 Daftar Penilaian Tersimpan")
 
-# Tampilkan tabel
+# Tampilkan data penilaian
 if st.session_state.penilaian_data:
     for i, data in enumerate(st.session_state.penilaian_data):
         col1, col2 = st.columns([10, 1])
@@ -108,6 +125,7 @@ if st.session_state.penilaian_data:
         with col2:
             if st.button("Hapus", key=f"hapus_{i}"):
                 st.session_state.penilaian_data.pop(i)
+                save_data(st.session_state.penilaian_data)
                 st.experimental_rerun()
 else:
     st.info("Belum ada data penilaian disimpan.")
