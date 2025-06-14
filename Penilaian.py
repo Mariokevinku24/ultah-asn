@@ -5,65 +5,33 @@ import os
 
 # Konfigurasi halaman
 st.set_page_config(page_title="Penilaian Kantor Ramah Lingkungan", layout="wide")
-st.title("📄 Form Penilaian Kantor Ramah Lingkungan")
+st.title("📋 Form Penilaian Kantor Ramah Lingkungan")
 
 CSV_FILE = "penilaian.csv"
 
-# Fungsi untuk memuat data dari CSV
+# Fungsi untuk load data dari CSV
 def load_data():
-    if os.path.exists(CSV_FILE) and os.path.getsize(CSV_FILE) > 0:
-        return pd.read_csv(CSV_FILE).to_dict("records")
+    if os.path.exists(CSV_FILE):
+        if os.path.getsize(CSV_FILE) == 0:
+            st.info("📂 File CSV kosong, memulai data baru.")
+            return []
+        try:
+            return pd.read_csv(CSV_FILE).to_dict("records")
+        except Exception as e:
+            st.error(f"❌ Gagal membaca CSV: {e}")
+            return []
     return []
 
-# Fungsi untuk menyimpan data ke CSV
+# Fungsi simpan ke CSV
 def save_data(data):
     df = pd.DataFrame(data)
     df.to_csv(CSV_FILE, index=False)
 
-# Inisialisasi data pada session_state
+# Inisialisasi session state
 if "penilaian_data" not in st.session_state:
     st.session_state.penilaian_data = load_data()
 
-# Komponen dan Sub-komponen penilaian
-komponen = {
-    "1. Area Kantor": ["Sampah dan gulma", "Tempat Sampah"],
-    "2. Drainase": ["Sampah, gulma dan sedimen"],
-    "3. RTH": [
-        "Pohon peneduh berdasarkan sebaran",
-        "Pohon peneduh berdasarkan fungsi",
-        "Penghijauan"
-    ],
-    "4. Pelayanan Pengumpulan Sampah": [
-        "Bangunan fisik dan pelayanan",
-        "Kebersihan TPS"
-    ],
-    "5. Pemilahan Sampah": [
-        "Sarana Pemilahan Sampah",
-        "Proses Pemilahan Sampah"
-    ],
-    "6. Kegiatan Pengomposan": [
-        "Sarana Pengolahan Sampah",
-        "Proses Pengolahan Sampah",
-        "Kapasitas",
-        "Jumlah sampah untuk diolah",
-        "Pemanfaatan"
-    ],
-    "7. Toilet": [
-        "Kebersihan Toilet",
-        "Air bersih di Toilet"
-    ],
-    "8. Kebersihan Ruangan": [
-        "Debu, assesories ruangan (keset, bunga, dll)"
-    ],
-    "9. Ventilasi Ruangan": ["Jendela"],
-    "10. Slogan/Himbauan/Etika": ["Plank nama, slogan/himbauan"],
-    "11. Bank Sampah": [
-        "Jumlah Bank Sampah/SK Bank Sampah",
-        "Jumlah Bank Sampah yang sudah berjalan"
-    ]
-}
-
-# Formulir input
+# FORM INPUT
 with st.form("form_penilaian"):
     col1, col2 = st.columns(2)
     with col1:
@@ -71,19 +39,58 @@ with st.form("form_penilaian"):
     with col2:
         nama_penilai = st.text_input("Nama Penilai")
 
-    nilai_sub = {}
-    total_nilai = 0
+    komponen = {
+        "1. Area Kantor": ["Sampah dan gulma", "Tempat Sampah"],
+        "2. Drainase": ["Sampah, gulma dan sedimen"],
+        "3. RTH": [
+            "Pohon peneduh berdasarkan sebaran",
+            "Pohon peneduh berdasarkan fungsi",
+            "Penghijauan"
+        ],
+        "4. Pelayanan Pengumpulan Sampah": [
+            "Bangunan fisik dan pelayanan",
+            "Kebersihan TPS"
+        ],
+        "5. Pemilahan Sampah": [
+            "Sarana Pemilahan Sampah",
+            "Proses Pemilahan Sampah"
+        ],
+        "6. Kegiatan Pengomposan": [
+            "Sarana Pengolahan Sampah",
+            "Proses Pengolahan Sampah",
+            "Kapasitas",
+            "Jumlah sampah untuk diolah",
+            "Pemanfaatan"
+        ],
+        "7. Toilet": [
+            "Kebersihan Toilet",
+            "Air bersih di Toilet"
+        ],
+        "8. Kebersihan Ruangan": [
+            "Debu, assesories ruangan (keset, bunga, dll)"
+        ],
+        "9. Ventilasi Ruangan": ["Jendela"],
+        "10. Slogan/Himbauan/Etika": ["Plank nama, slogan/himbauan"],
+        "11. Bank Sampah": [
+            "Jumlah Bank Sampah/SK Bank Sampah",
+            "Jumlah Bank Sampah yang sudah berjalan"
+        ]
+    }
 
-    # Loop semua komponen dan sub-komponen
-    for judul, subkomponens in komponen.items():
-        st.markdown(f"### {judul}")
-        for sub in subkomponens:
-            key = f"{judul} - {sub}"
-            nilai = st.number_input(sub, min_value=0, max_value=100, step=10, key=key)
-            nilai_sub[key] = nilai
+    total_nilai = 0
+    for k, sub_komponen in komponen.items():
+        st.markdown(f"### {k}")
+        for sub in sub_komponen:
+            nilai = st.number_input(
+                sub,
+                min_value=0,
+                max_value=10,
+                step=1,
+                key=f"{k}-{sub}"
+            )
             total_nilai += nilai
 
-    # Tentukan kategori berdasarkan total nilai
+    # Penentuan kategori
     if total_nilai >= 81:
         kategori = "Sangat Baik"
     elif total_nilai >= 71:
@@ -97,7 +104,7 @@ with st.form("form_penilaian"):
     else:
         kategori = "Belum Memadai"
 
-    submitted = st.form_submit_button("Simpan Penilaian")
+    submitted = st.form_submit_button("💾 Simpan Penilaian")
 
     if submitted and nama_instansi and nama_penilai:
         data_baru = {
@@ -107,15 +114,13 @@ with st.form("form_penilaian"):
             "Total Nilai": total_nilai,
             "Kategori": kategori
         }
-        data_baru.update(nilai_sub)
-
         st.session_state.penilaian_data.append(data_baru)
         save_data(st.session_state.penilaian_data)
         st.success("✅ Penilaian berhasil disimpan!")
 
-# Tampilkan daftar penilaian
+# TAMPILKAN PENILAIAN YANG TERSIMPAN
 st.markdown("---")
-st.subheader("📋 Daftar Penilaian Tersimpan")
+st.subheader("📑 Daftar Penilaian Tersimpan")
 
 if st.session_state.penilaian_data:
     for i, data in enumerate(st.session_state.penilaian_data):
@@ -123,24 +128,14 @@ if st.session_state.penilaian_data:
         with col1:
             st.markdown(f"""
             **{i+1}. {data['Nama Instansi']}**  
-            🧑 Penilai: `{data['Nama Penilai']}`  
-            📊 Nilai: `{data['Total Nilai']}`  
-            🏅 Kategori: **{data['Kategori']}**  
-            🕒 Waktu: {data['Waktu']}
+            Penilai: {data['Nama Penilai']}  
+            Nilai: **{data['Total Nilai']}**  
+            Kategori: **{data['Kategori']}**  
+            Waktu: {data['Waktu']}
             """)
         with col2:
             if st.button("🗑️ Hapus", key=f"hapus_{i}"):
                 st.session_state.penilaian_data.pop(i)
                 save_data(st.session_state.penilaian_data)
-                st.experimental_rerun()
-else:
-    st.info("Belum ada data penilaian disimpan.")
+                st.experimenta
 
-# Tombol untuk mengunduh CSV
-st.markdown("---")
-st.download_button(
-    label="⬇️ Unduh Semua Penilaian (CSV)",
-    data=pd.DataFrame(st.session_state.penilaian_data).to_csv(index=False),
-    file_name="penilaian.csv",
-    mime="text/csv"
-)
