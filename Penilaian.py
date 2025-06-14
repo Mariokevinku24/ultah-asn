@@ -1,92 +1,113 @@
 import streamlit as st
+from datetime import datetime
 
+st.set_page_config(page_title="Penilaian Kantor Ramah Lingkungan", layout="wide")
 st.title("Form Penilaian Kantor Ramah Lingkungan")
 
-# Input Nama Instansi dan Penilai
-nama_instansi = st.text_input("Nama Instansi")
-nama_penilai = st.text_input("Nama Penilai")
+# Inisialisasi session state untuk menyimpan data penilaian
+if "penilaian_data" not in st.session_state:
+    st.session_state.penilaian_data = []
 
-# Komponen dan Sub-komponen
-komponen = {
-    "1. Area Kantor": ["Sampah dan gulma", "Tempat Sampah"],
-    "2. Drainase": ["Sampah, gulma dan sedimen"],
-    "3. RTH": [
-        "Pohon peneduh berdasarkan sebaran",
-        "Pohon peneduh berdasarkan fungsi",
-        "Penghijauan"
-    ],
-    "4. Pelayanan Pengumpulan Sampah": [
-        "Bangunan fisik dan pelayanan",
-        "Kebersihan TPS"
-    ],
-    "5. Pemilahan Sampah": [
-        "Sarana Pemilahan Sampah",
-        "Proses Pemilahan Sampah"
-    ],
-    "6. Kegiatan Pengomposan": [
-        "Sarana Pengolahan Sampah",
-        "Proses Pengolahan Sampah",
-        "Kapasitas",
-        "Jumlah sampah untuk diolah",
-        "Pemanfaatan"
-    ],
-    "7. Toilet": [
-        "Kebersihan Toilet",
-        "Air bersih di Toilet"
-    ],
-    "8. Kebersihan Ruangan": [
-        "Debu, assesories ruangan (keset, bunga, dll)"
-    ],
-    "9. Ventilasi Ruangan": ["Jendela"],
-    "10. Slogan/Himbauan/Etika": ["Plank nama, slogan/himbauan"],
-    "11. Bank Sampah": [
-        "Jumlah Bank Sampah/SK Bank Sampah",
-        "Jumlah Bank Sampah yang sudah berjalan"
-    ]
-}
+# Form input
+with st.form("form_penilaian"):
+    col1, col2 = st.columns(2)
+    with col1:
+        nama_instansi = st.text_input("Nama Instansi")
+    with col2:
+        nama_penilai = st.text_input("Nama Penilai")
+
+    # Komponen dan Sub-komponen
+    komponen = {
+        "1. Area Kantor": ["Sampah dan gulma", "Tempat Sampah"],
+        "2. Drainase": ["Sampah, gulma dan sedimen"],
+        "3. RTH": [
+            "Pohon peneduh berdasarkan sebaran",
+            "Pohon peneduh berdasarkan fungsi",
+            "Penghijauan"
+        ],
+        "4. Pelayanan Pengumpulan Sampah": [
+            "Bangunan fisik dan pelayanan",
+            "Kebersihan TPS"
+        ],
+        "5. Pemilahan Sampah": [
+            "Sarana Pemilahan Sampah",
+            "Proses Pemilahan Sampah"
+        ],
+        "6. Kegiatan Pengomposan": [
+            "Sarana Pengolahan Sampah",
+            "Proses Pengolahan Sampah",
+            "Kapasitas",
+            "Jumlah sampah untuk diolah",
+            "Pemanfaatan"
+        ],
+        "7. Toilet": [
+            "Kebersihan Toilet",
+            "Air bersih di Toilet"
+        ],
+        "8. Kebersihan Ruangan": [
+            "Debu, assesories ruangan (keset, bunga, dll)"
+        ],
+        "9. Ventilasi Ruangan": ["Jendela"],
+        "10. Slogan/Himbauan/Etika": ["Plank nama, slogan/himbauan"],
+        "11. Bank Sampah": [
+            "Jumlah Bank Sampah/SK Bank Sampah",
+            "Jumlah Bank Sampah yang sudah berjalan"
+        ]
+    }
+
+    total_nilai = 0
+    for k, sub_komponen in komponen.items():
+        st.markdown(f"**{k}**")
+        for sub in sub_komponen:
+            nilai = st.number_input(
+                f"{sub}", min_value=0, max_value=10, step=1, key=f"{k}-{sub}"
+            )
+            total_nilai += nilai
+
+    # Kategori akhir
+    if total_nilai >= 81:
+        kategori = "Sangat Baik"
+    elif total_nilai >= 71:
+        kategori = "Baik"
+    elif total_nilai >= 61:
+        kategori = "Sedang"
+    elif total_nilai >= 46:
+        kategori = "Jelek"
+    elif total_nilai >= 30:
+        kategori = "Sangat Jelek"
+    else:
+        kategori = "Belum Memadai"
+
+    submitted = st.form_submit_button("Simpan Penilaian")
+
+    if submitted and nama_instansi and nama_penilai:
+        st.session_state.penilaian_data.append({
+            "Waktu": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Nama Instansi": nama_instansi,
+            "Nama Penilai": nama_penilai,
+            "Total Nilai": total_nilai,
+            "Kategori": kategori
+        })
+        st.success("Penilaian berhasil disimpan!")
 
 st.markdown("---")
-total_nilai = 0
-nilai_komponen = {}
+st.subheader("📋 Daftar Penilaian Tersimpan")
 
-# Loop input untuk tiap sub-komponen
-for k, sub_komponen in komponen.items():
-    st.subheader(k)
-    for sub in sub_komponen:
-        nilai = st.number_input(
-            f"Nilai untuk {sub}",
-            min_value=0,
-            max_value=10,
-            step=1,
-            key=f"{k}-{sub}"
-        )
-        nilai_komponen[f"{k} - {sub}"] = nilai
-        total_nilai += nilai
-
-# Hasil Total & Kategori
-st.markdown("---")
-st.subheader("Total Nilai")
-st.write(f"**{total_nilai}**")
-
-# Kategori akhir berdasarkan skor total
-if total_nilai >= 81:
-    kategori = "Sangat Baik"
-elif total_nilai >= 71:
-    kategori = "Baik"
-elif total_nilai >= 61:
-    kategori = "Sedang"
-elif total_nilai >= 46:
-    kategori = "Jelek"
-elif total_nilai >= 30:
-    kategori = "Sangat Jelek"
+# Tampilkan tabel
+if st.session_state.penilaian_data:
+    for i, data in enumerate(st.session_state.penilaian_data):
+        col1, col2 = st.columns([10, 1])
+        with col1:
+            st.write(f"""
+                **{i+1}. {data['Nama Instansi']}**  
+                Penilai: {data['Nama Penilai']}  
+                Nilai: {data['Total Nilai']}  
+                Kategori: {data['Kategori']}  
+                Waktu: {data['Waktu']}
+            """)
+        with col2:
+            if st.button("Hapus", key=f"hapus_{i}"):
+                st.session_state.penilaian_data.pop(i)
+                st.experimental_rerun()
 else:
-    kategori = "Belum Memadai"
-
-st.write(f"**Kategori: {kategori}**")
-
-# Tampilkan informasi instansi dan penilai
-st.markdown("---")
-st.subheader("Informasi Penilaian")
-st.write(f"**Nama Instansi:** {nama_instansi}")
-st.write(f"**Nama Penilai:** {nama_penilai}")
-
+    st.info("Belum ada data penilaian disimpan.")
