@@ -122,6 +122,17 @@ with st.form("form_penilaian"):
 st.markdown("---")
 st.subheader("📑 Daftar Penilaian Tersimpan")
 
+# Tombol download CSV jika ada data
+if st.session_state.penilaian_data:
+    df_download = pd.DataFrame(st.session_state.penilaian_data)
+    st.download_button(
+        label="⬇️ Download CSV",
+        data=df_download.to_csv(index=False).encode("utf-8"),
+        file_name="data_penilaian.csv",
+        mime="text/csv"
+    )
+
+# Tampilkan data tersimpan
 if st.session_state.penilaian_data:
     for i, data in enumerate(st.session_state.penilaian_data):
         col1, col2 = st.columns([10, 1])
@@ -137,5 +148,7 @@ if st.session_state.penilaian_data:
             if st.button("🗑️ Hapus", key=f"hapus_{i}"):
                 st.session_state.penilaian_data.pop(i)
                 save_data(st.session_state.penilaian_data)
-                st.experimenta
+                st.experimental_rerun()
+else:
+    st.info("Belum ada data penilaian disimpan.")
 
