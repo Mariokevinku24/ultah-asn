@@ -7,24 +7,46 @@ st.set_page_config(page_title="Penilaian Kantor Ramah Lingkungan", layout="wide"
 st.title("📋 Form Penilaian Kantor Ramah Lingkungan")
 
 CSV_FILE = "penilaian.csv"
-DELETE_PASSWORD = "admin123"
+DELETE_PASSWORD = "admin123"  # Ganti password ini sesuai kebutuhan
 
-# Daftar 11 komponen utama
-KOMPONEN = [
-    "1. Area Kantor",
-    "2. Drainase",
-    "3. RTH",
-    "4. Pelayanan Pengumpulan Sampah",
-    "5. Pemilahan Sampah",
-    "6. Kegiatan Pengomposan",
-    "7. Toilet",
-    "8. Kebersihan Ruangan",
-    "9. Ventilasi Ruangan",
-    "10. Slogan/Himbauan/Etika",
-    "11. Bank Sampah"
-]
+# Komponen dan sub-komponen
+KOMPONEN = {
+    "1. Area Kantor": ["Sampah dan gulma", "Tempat Sampah"],
+    "2. Drainase": ["Sampah, gulma dan sedimen"],
+    "3. RTH": [
+        "Pohon peneduh berdasarkan sebaran",
+        "Pohon peneduh berdasarkan fungsi",
+        "Penghijauan"
+    ],
+    "4. Pelayanan Pengumpulan Sampah": [
+        "Bangunan fisik dan pelayanan",
+        "Kebersihan TPS"
+    ],
+    "5. Pemilahan Sampah": [
+        "Sarana Pemilahan Sampah",
+        "Proses Pemilahan Sampah"
+    ],
+    "6. Kegiatan Pengomposan": [
+        "Sarana Pengolahan Sampah",
+        "Proses Pengolahan Sampah",
+        "Kapasitas",
+        "Jumlah sampah untuk diolah",
+        "Pemanfaatan"
+    ],
+    "7. Toilet": [
+        "Kebersihan Toilet",
+        "Air bersih di Toilet"
+    ],
+    "8. Kebersihan Ruangan": ["Debu, assesories ruangan (keset, bunga, dll)"],
+    "9. Ventilasi Ruangan": ["Jendela"],
+    "10. Slogan/Himbauan/Etika": ["Plank nama, slogan/himbauan"],
+    "11. Bank Sampah": [
+        "Jumlah Bank Sampah/SK Bank Sampah",
+        "Jumlah Bank Sampah yang sudah berjalan"
+    ]
+}
 
-# Fungsi load/save
+# Fungsi
 def load_data():
     if os.path.exists(CSV_FILE) and os.path.getsize(CSV_FILE) > 0:
         try:
@@ -34,7 +56,8 @@ def load_data():
     return []
 
 def save_data(data):
-    pd.DataFrame(data).to_csv(CSV_FILE, index=False)
+    df = pd.DataFrame(data)
+    df.to_csv(CSV_FILE, index=False)
 
 # Init session state
 if "penilaian_data" not in st.session_state:
@@ -51,12 +74,20 @@ with st.form("form_penilaian"):
     total_nilai = 0
     nilai_komponen = {}
 
-    for k in KOMPONEN:
-        nilai = st.number_input(k, min_value=0, max_value=10, step=1, key=k)
-        nilai_komponen[k] = nilai
-        total_nilai += nilai
+    for k, sub_komponen in KOMPONEN.items():
+        st.markdown(f"### {k}")
+        for sub in sub_komponen:
+            nilai = st.number_input(
+                label=sub,
+                min_value=0,
+                max_value=10,
+                step=1,
+                key=f"{k}-{sub}"
+            )
+            nilai_komponen[sub] = nilai
+            total_nilai += nilai
 
-    # Kategori berdasarkan total
+    # Kategori akhir
     if total_nilai >= 81:
         kategori = "Sangat Baik"
     elif total_nilai >= 71:
@@ -78,14 +109,16 @@ with st.form("form_penilaian"):
             "Nama Instansi": nama_instansi,
             "Nama Penilai": nama_penilai,
             "Total Nilai": total_nilai,
-            "Kategori": kategori
+            "Kategori": kategori,
         }
-        data_baru.update(nilai_komponen)
+        data_baru.update(nilai_komponen)  # Gabungkan semua nilai per sub-komponen
         st.session_state.penilaian_data.append(data_baru)
         save_data(st.session_state.penilaian_data)
         st.success("✅ Penilaian berhasil disimpan!")
 
-# Tampilkan data tersimpan
+# --------------------
+# Tampilan hasil nilai
+# --------------------
 st.markdown("---")
 st.subheader("📑 Daftar Penilaian Tersimpan")
 
@@ -100,13 +133,9 @@ if st.session_state.penilaian_data:
         mime="text/csv"
     )
 
+    # Hapus dengan password
     st.markdown("### 🔐 Hapus Penilaian")
-    idx_to_delete = st.number_input(
-        "Masukkan nomor data yang ingin dihapus (mulai dari 1):",
-        min_value=1,
-        max_value=len(df),
-        step=1
-    )
+    idx_to_delete = st.number_input("Masukkan nomor data yang ingin dihapus (mulai dari 1):", min_value=1, max_value=len(df), step=1)
     password = st.text_input("Masukkan password", type="password")
     if st.button("Hapus Data"):
         if password == DELETE_PASSWORD:
@@ -118,4 +147,3 @@ if st.session_state.penilaian_data:
             st.error("❌ Password salah.")
 else:
     st.info("Belum ada data penilaian disimpan.")
-
