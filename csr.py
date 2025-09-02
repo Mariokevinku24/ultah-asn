@@ -26,7 +26,8 @@ def generate_zip(template_bytes, data_rows):
                 "Kegiatan": row.get("Kegiatan", ""),
                 "Lokasi": row.get("Lokasi", ""),
                 "Jumlah_Sumbangan": row.get("Jumlah_Sumbangan", ""),
-                "Jenis_Barang": row.get("Jenis_Barang", "")
+                "Jenis_Barang": row.get("Jenis_Barang", ""),
+                "Kecamatan": row.get("Kecamatan","")
             }
 
             tpl.render(context)
