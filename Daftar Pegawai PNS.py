@@ -22,6 +22,7 @@ def generate_zip(template_bytes, data_rows):
             context = {
                 "Nama_Pegawai": row.get("Nama_Pegawai", ""),
                 "Jabatan": row.get("Jabatan", ""),
+                "Golongan": row.get("Golongan", ""),
                 "Pangkat": row.get("Pangkat", ""),
                 "NIP": row.get("NIP", ""),
             }
