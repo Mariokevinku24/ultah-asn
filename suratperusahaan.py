@@ -36,7 +36,7 @@ def generate_zip(template_bytes, data_rows):
             doc_io.seek(0)
 
             safe_nama = re.sub(r"[^\w\s-]", "", context["NAMA"]).strip().replace(" ", "_")
-            filename = f"Surat_{safe_nama}.docx"
+            filename = f"Surat-Kontrak_{safe_nama}.docx"
             zip_file.writestr(filename, doc_io.read())
 
     zip_buffer.seek(0)
@@ -86,6 +86,6 @@ if excel_file and template_file:
                 st.download_button(
                     label="📦 Download Semua Surat (.zip)",
                     data=hasil_zip,
-                    file_name="semua_surat_csr.zip",
+                    file_name="semua_surat_kontrak.zip",
                     mime="application/zip"
                 )
