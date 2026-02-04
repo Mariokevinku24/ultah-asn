@@ -39,11 +39,11 @@ def generate_single_docx(template_bytes, data_rows):
         tpl = DocxTemplate(BytesIO(template_bytes))
 
         context = {
-            "Nama_Pegawai": row.get("Nama_Pegawai", ""),
-            "Jabatan": row.get("Jabatan", ""),
-            "Golongan": row.get("Golongan", ""),
-            "Pangkat": row.get("Pangkat", ""),
-            "NIP": row.get("NIP", ""),
+            "NAMA": row.get("NAMA", ""),
+            "NIK": row.get("NIK", ""),
+            "TTL": row.get("TTL", ""),
+            "PENDIDIKAN": row.get("PENDIDIKAN", ""),
+            "ALAMAT": row.get("ALAMAT", ""),
         }
 
         tpl.render(context)
