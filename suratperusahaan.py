@@ -20,11 +20,11 @@ def generate_zip(template_bytes, data_rows):
             tpl = DocxTemplate(BytesIO(template_bytes))
 
             context = {
-                "Nama_Perusahaan": row.get("Nama_Perusahaan", ""),
-                "Nama_Direktur": row.get("Nama_Direktur", ""),
-                "Jabatan_Direktur": row.get("Jabatan_Direktur", ""),
-                "Kegiatan": row.get("Kegiatan", ""),
-                "Lokasi": row.get("Lokasi", ""),
+                "NAMA": row.get("NAMA", ""),
+                "TTL": row.get("TTL", ""),
+                "NIK": row.get("NIK", ""),
+                "PENDIDIKAN": row.get("PENDIDIKAN", ""),
+                "ALAMAT": row.get("ALAMAT", ""),
                 "Jumlah_Sumbangan": row.get("Jumlah_Sumbangan", ""),
                 "Jenis_Barang": row.get("Jenis_Barang", "")
             }
@@ -59,7 +59,7 @@ def preview_docx_from_template(template_bytes, context):
 if excel_file and template_file:
     df = pd.read_excel(excel_file).fillna("")
     
-    required_columns = ["Nama_Perusahaan"]
+    required_columns = ["NAMA"]
     missing_cols = [col for col in required_columns if col not in df.columns]
     
     if missing_cols:
