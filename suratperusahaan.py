@@ -65,10 +65,10 @@ if excel_file and template_file:
     if missing_cols:
         st.error(f"Kolom berikut wajib ada di Excel: {', '.join(missing_cols)}")
     else:
-        df_valid = df[df["Nama_Perusahaan"].str.strip() != ""]
+        df_valid = df[df["NAMA"].str.strip() != ""]
         
         if df_valid.empty:
-            st.error("Tidak ada data perusahaan yang valid. Kolom 'Nama_Perusahaan' wajib diisi.")
+            st.error("Tidak ada data perusahaan yang valid. Kolom 'NAMA' wajib diisi.")
         else:
             data_rows = df_valid.to_dict(orient="records")
             template_bytes = template_file.read()
