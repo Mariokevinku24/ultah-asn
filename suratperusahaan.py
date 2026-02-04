@@ -35,7 +35,7 @@ def generate_zip(template_bytes, data_rows):
             tpl.save(doc_io)
             doc_io.seek(0)
 
-            safe_nama = re.sub(r"[^\w\s-]", "", context["Nama_Perusahaan"]).strip().replace(" ", "_")
+            safe_nama = re.sub(r"[^\w\s-]", "", context["NAMA"]).strip().replace(" ", "_")
             filename = f"Surat_{safe_nama}.docx"
             zip_file.writestr(filename, doc_io.read())
 
