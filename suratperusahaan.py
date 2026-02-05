@@ -6,10 +6,10 @@ from io import BytesIO
 import zipfile
 import re
 
-st.title("Generator Banyak Surat CSR (ZIP)")
+st.title("Generator Banyak Surat SURAT DINAS (ZIP)")
 
 # Upload file
-excel_file = st.file_uploader("📄 Upload Excel (daftar perusahaan)", type="xlsx")
+excel_file = st.file_uploader("📄 Upload Excel (daftar nama)", type="xlsx")
 template_file = st.file_uploader("📄 Upload Template Surat (Word .docx)", type="docx")
 
 # Fungsi membuat ZIP berisi surat-surat
@@ -25,7 +25,7 @@ def generate_zip(template_bytes, data_rows):
                 "NIK": row.get("NIK", ""),
                 "PENDIDIKAN": row.get("PENDIDIKAN", ""),
                 "ALAMAT": row.get("ALAMAT", ""),
-                "Jumlah_Sumbangan": row.get("Jumlah_Sumbangan", ""),
+                "PENEMPATAN": row.get("PENEMPATAN", ""),
                 "Jenis_Barang": row.get("Jenis_Barang", "")
             }
 
