@@ -60,7 +60,7 @@ def generate_zip(template_bytes, data_rows):
             if safe_kecamatan == "":
                 safe_kecamatan = "tanpa_nama"
 
-            filename = f"BAST_Pasar_Murah_{safe_kecamatan}.docx"
+            filename = f"SPTJM_Pasar_Murah_{safe_kecamatan}.docx"
 
             zip_file.writestr(filename, doc_io.read())
 
