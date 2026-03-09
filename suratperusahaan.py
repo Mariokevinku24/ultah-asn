@@ -136,6 +136,6 @@ if excel_file and template_file:
                 st.download_button(
                     label="📦 Download Semua Surat (.zip)",
                     data=hasil_zip,
-                    file_name="BAST_Pasar_Murah.zip",
+                    file_name="SPTJM_Pasar_Murah.zip",
                     mime="application/zip"
                 )
