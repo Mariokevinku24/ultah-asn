@@ -43,6 +43,8 @@ def generate_zip(template_bytes, data_rows):
                 "terbilang_telur": clean_value(row.get("terbilang_telur")),
                 "Jlh_minyak": clean_value(row.get("Jlh_minyak")),
                 "terbilang_minyak": clean_value(row.get("terbilang_minyak")),
+                "Jlh_gula": clean_value(row.get("Jlh_gula")),
+                "terbilang_gula": clean_value(row.get("terbilang_gula")),
                 "Plt": clean_value(row.get("Plt"))
             }
 
