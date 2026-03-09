@@ -12,28 +12,38 @@ st.title("Generator Banyak Surat Dinas (ZIP)")
 excel_file = st.file_uploader("📄 Upload Excel (data kecamatan)", type="xlsx")
 template_file = st.file_uploader("📄 Upload Template Surat (Word .docx)", type="docx")
 
-# Fungsi membuat ZIP berisi surat-surat
+
+# Membersihkan nilai agar aman
+def clean_value(val):
+    if pd.isna(val):
+        return ""
+    return str(val).replace(".0", "").strip()
+
+
+# Fungsi membuat ZIP berisi surat
 def generate_zip(template_bytes, data_rows):
+
     zip_buffer = BytesIO()
 
     with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+
         for row in data_rows:
 
             tpl = DocxTemplate(BytesIO(template_bytes))
 
             context = {
-                "Kecamatan": row.get("Kecamatan", ""),
-                "Camat": row.get("Camat", ""),
-                "Pangkat": row.get("Pangkat", ""),
-                "Golongan": row.get("Golongan", ""),
-                "NIP": row.get("NIP", ""),
-                "Jlh_beras": row.get("Jlh_beras", ""),
-                "terbilang_beras": row.get("terbilang_beras", ""),
-                "Jlh_telur": row.get("Jlh_telur", ""),
-                "terbilang_telur": row.get("terbilang_telur", ""),
-                "Jlh_minyak": row.get("Jlh_minyak", ""),
-                "terbilang_minyak": row.get("terbilang_minyak", ""),
-                "Plt": row.get("Plt", "")
+                "Kecamatan": clean_value(row.get("Kecamatan")),
+                "Camat": clean_value(row.get("Camat")),
+                "Pangkat": clean_value(row.get("Pangkat")),
+                "Golongan": clean_value(row.get("Golongan")),
+                "NIP": clean_value(row.get("NIP")),
+                "Jlh_beras": clean_value(row.get("Jlh_beras")),
+                "terbilang_beras": clean_value(row.get("terbilang_beras")),
+                "Jlh_telur": clean_value(row.get("Jlh_telur")),
+                "terbilang_telur": clean_value(row.get("terbilang_telur")),
+                "Jlh_minyak": clean_value(row.get("Jlh_minyak")),
+                "terbilang_minyak": clean_value(row.get("terbilang_minyak")),
+                "Plt": clean_value(row.get("Plt"))
             }
 
             tpl.render(context)
@@ -44,6 +54,10 @@ def generate_zip(template_bytes, data_rows):
 
             # nama file berdasarkan kecamatan
             safe_kecamatan = re.sub(r"[^\w\s-]", "", context["Kecamatan"]).strip().replace(" ", "_")
+
+            if safe_kecamatan == "":
+                safe_kecamatan = "tanpa_nama"
+
             filename = f"BAST_Pasar_Murah_{safe_kecamatan}.docx"
 
             zip_file.writestr(filename, doc_io.read())
@@ -52,32 +66,43 @@ def generate_zip(template_bytes, data_rows):
     return zip_buffer
 
 
-# Fungsi preview surat
+# Preview isi surat pertama
 def preview_docx_from_template(template_bytes, context):
 
-    tpl = DocxTemplate(BytesIO(template_bytes))
-    tpl.render(context)
+    try:
+        tpl = DocxTemplate(BytesIO(template_bytes))
+        tpl.render(context)
 
-    doc_io = BytesIO()
-    tpl.save(doc_io)
-    doc_io.seek(0)
+        doc_io = BytesIO()
+        tpl.save(doc_io)
+        doc_io.seek(0)
 
-    doc = Document(doc_io)
-    lines = [p.text for p in doc.paragraphs]
+        doc = Document(doc_io)
 
-    return "\n".join(lines)
+        lines = [p.text for p in doc.paragraphs]
+
+        return "\n".join(lines)
+
+    except Exception as e:
+        return f"ERROR TEMPLATE:\n{e}"
 
 
-# Logika utama
+# Logika utama aplikasi
 if excel_file and template_file:
 
-    df = pd.read_excel(excel_file).fillna("")
+    try:
+        # membaca excel sebagai teks agar NIP tidak rusak
+        df = pd.read_excel(excel_file, dtype=str).fillna("")
+    except Exception as e:
+        st.error(f"Gagal membaca Excel: {e}")
+        st.stop()
 
     required_columns = ["Kecamatan"]
 
     missing_cols = [col for col in required_columns if col not in df.columns]
 
     if missing_cols:
+
         st.error(f"Kolom berikut wajib ada di Excel: {', '.join(missing_cols)}")
 
     else:
@@ -85,24 +110,27 @@ if excel_file and template_file:
         df_valid = df[df["Kecamatan"].str.strip() != ""]
 
         if df_valid.empty:
+
             st.error("Tidak ada data kecamatan yang valid. Kolom 'Kecamatan' wajib diisi.")
 
         else:
 
             data_rows = df_valid.to_dict(orient="records")
+
             template_bytes = template_file.read()
 
-            # preview surat pertama
-            st.subheader("📄 Preview Isi Surat Pertama:")
+            # Preview surat pertama
+            st.subheader("📄 Preview Isi Surat Pertama")
 
             preview_text = preview_docx_from_template(template_bytes, data_rows[0])
 
             st.text_area("Preview Surat", preview_text, height=500)
 
-            # tombol generate
+            # Tombol generate
             if st.button("📝 Buat dan Unduh Semua Surat"):
 
                 with st.spinner("Membuat semua surat..."):
+
                     hasil_zip = generate_zip(template_bytes, data_rows)
 
                 st.download_button(
