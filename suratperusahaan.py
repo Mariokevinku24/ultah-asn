@@ -13,11 +13,22 @@ excel_file = st.file_uploader("📄 Upload Excel (data kecamatan)", type="xlsx")
 template_file = st.file_uploader("📄 Upload Template Surat (Word .docx)", type="docx")
 
 
-# Membersihkan nilai agar aman
-def clean_value(val):
-    if pd.isna(val):
+# Membersihkan teks biasa (untuk NIP, nama, dll)
+def clean_text(val):
+    if pd.isna(val) or val == "":
         return ""
     return str(val).replace(".0", "").strip()
+
+
+# Format angka menjadi 1.000 format Indonesia
+def format_number(val):
+    if pd.isna(val) or val == "":
+        return ""
+    try:
+        num = int(float(val))
+        return f"{num:,}".replace(",", ".")
+    except:
+        return str(val).strip()
 
 
 # Fungsi membuat ZIP berisi surat
@@ -32,23 +43,28 @@ def generate_zip(template_bytes, data_rows):
             tpl = DocxTemplate(BytesIO(template_bytes))
 
             context = {
-                "Kecamatan": clean_value(row.get("Kecamatan")),
-                "Camat": clean_value(row.get("Camat")),
-                "Pangkat": clean_value(row.get("Pangkat")),
-                "Golongan": clean_value(row.get("Golongan")),
-                "NIP": clean_value(row.get("NIP")),
-                "Jlh_beras": clean_value(row.get("Jlh_beras")),
-                "terbilang_beras": clean_value(row.get("terbilang_beras")),
-                "Jlh_telur": clean_value(row.get("Jlh_telur")),
-                "terbilang_telur": clean_value(row.get("terbilang_telur")),
-                "Jlh_minyak": clean_value(row.get("Jlh_minyak")),
-                "terbilang_minyak": clean_value(row.get("terbilang_minyak")),
-                "Jlh_gula": clean_value(row.get("Jlh_gula")),
-                "terbilang_gula": clean_value(row.get("terbilang_gula")),
-                "Total_beras": clean_value(row.get("Total_beras")),
-                "Total_minyak": clean_value(row.get("Total_minyak")),
-                "Total_telur": clean_value(row.get("Total_telur")),
-                "Total_gula": clean_value(row.get("Total_gula")),
+                "Kecamatan": clean_text(row.get("Kecamatan")),
+                "Camat": clean_text(row.get("Camat")),
+                "Pangkat": clean_text(row.get("Pangkat")),
+                "Golongan": clean_text(row.get("Golongan")),
+                "NIP": clean_text(row.get("NIP")),
+
+                "Jlh_beras": format_number(row.get("Jlh_beras")),
+                "terbilang_beras": clean_text(row.get("terbilang_beras")),
+
+                "Jlh_telur": format_number(row.get("Jlh_telur")),
+                "terbilang_telur": clean_text(row.get("terbilang_telur")),
+
+                "Jlh_minyak": format_number(row.get("Jlh_minyak")),
+                "terbilang_minyak": clean_text(row.get("terbilang_minyak")),
+
+                "Jlh_gula": format_number(row.get("Jlh_gula")),
+                "terbilang_gula": clean_text(row.get("terbilang_gula")),
+
+                "Total_beras": format_number(row.get("Total_beras")),
+                "Total_minyak": format_number(row.get("Total_minyak")),
+                "Total_telur": format_number(row.get("Total_telur")),
+                "Total_gula": format_number(row.get("Total_gula")),
             }
 
             tpl.render(context)
