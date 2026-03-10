@@ -46,6 +46,10 @@ def generate_zip(template_bytes, data_rows):
                 "Jlh_gula": clean_value(row.get("Jlh_gula")),
                 "terbilang_gula": clean_value(row.get("terbilang_gula")),
                 "Plt": clean_value(row.get("Plt"))
+                "Total_beras": clean_value(row.get("Total_beras")),
+                "Total_minyak": clean_value(row.get("Total_minyak")),
+                "Total_telur": clean_value(row.get("Total_telur")),
+                "Total_gula": clean_value(row.get("Total_gula")),
             }
 
             tpl.render(context)
