@@ -65,6 +65,7 @@ def generate_zip(template_bytes, data_rows):
                 "Total_minyak": format_number(row.get("Total_minyak")),
                 "Total_telur": format_number(row.get("Total_telur")),
                 "Total_gula": format_number(row.get("Total_gula")),
+                "Total_camat": format_number(row.get("Total_camat")),
             }
 
             tpl.render(context)
