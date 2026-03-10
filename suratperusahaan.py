@@ -79,7 +79,7 @@ def generate_zip(template_bytes, data_rows):
             if safe_kecamatan == "":
                 safe_kecamatan = "tanpa_nama"
 
-            filename = f"SPTJM_Pasar_Murah_{safe_kecamatan}.docx"
+            filename = f"BAST_Pasar_Murah_{safe_kecamatan}.docx"
 
             zip_file.writestr(filename, doc_io.read())
 
@@ -157,6 +157,6 @@ if excel_file and template_file:
                 st.download_button(
                     label="📦 Download Semua Surat (.zip)",
                     data=hasil_zip,
-                    file_name="SPTJM_Pasar_Murah.zip",
+                    file_name="BAST_Pasar_Murah.zip",
                     mime="application/zip"
                 )
