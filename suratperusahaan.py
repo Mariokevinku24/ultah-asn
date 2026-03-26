@@ -48,6 +48,7 @@ def generate_zip(template_bytes, data_rows):
                 "Nama": clean_text(row.get("Nama")),
                 "Pangkat": clean_text(row.get("Pangkat")),
                 "Golongan": clean_text(row.get("Golongan")),
+                "Jabatan": clean_text(row.get("Jabatan")),
                 "NIP": clean_text(row.get("NIP")),
 
                 "Jlh_beras": format_number(row.get("Jlh_beras")),
