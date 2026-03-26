@@ -45,6 +45,7 @@ def generate_zip(template_bytes, data_rows):
             context = {
                 "Kecamatan": clean_text(row.get("Kecamatan")),
                 "Camat": clean_text(row.get("Camat")),
+                "Nama": clean_text(row.get("Nama")),
                 "Pangkat": clean_text(row.get("Pangkat")),
                 "Golongan": clean_text(row.get("Golongan")),
                 "NIP": clean_text(row.get("NIP")),
@@ -75,12 +76,12 @@ def generate_zip(template_bytes, data_rows):
             doc_io.seek(0)
 
             # nama file berdasarkan kecamatan
-            safe_kecamatan = re.sub(r"[^\w\s-]", "", context["Kecamatan"]).strip().replace(" ", "_")
+            safe_kecamatan = re.sub(r"[^\w\s-]", "", context["Nama"]).strip().replace(" ", "_")
 
             if safe_kecamatan == "":
                 safe_kecamatan = "tanpa_nama"
 
-            filename = f"BAST_Pasar_Murah_{safe_kecamatan}.docx"
+            filename = f"SPPD_Pasar_Murah_{safe_kecamatan}.docx"
 
             zip_file.writestr(filename, doc_io.read())
 
@@ -129,11 +130,11 @@ if excel_file and template_file:
 
     else:
 
-        df_valid = df[df["Kecamatan"].str.strip() != ""]
+        df_valid = df[df["Nama"].str.strip() != ""]
 
         if df_valid.empty:
 
-            st.error("Tidak ada data kecamatan yang valid. Kolom 'Kecamatan' wajib diisi.")
+            st.error("Tidak ada data Nama yang valid. Kolom 'Nama' wajib diisi.")
 
         else:
 
@@ -158,6 +159,6 @@ if excel_file and template_file:
                 st.download_button(
                     label="📦 Download Semua Surat (.zip)",
                     data=hasil_zip,
-                    file_name="BAST_Pasar_Murah.zip",
+                    file_name="SPPD_Pasar_Murah.zip",
                     mime="application/zip"
                 )
