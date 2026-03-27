@@ -77,12 +77,14 @@ def generate_zip(template_bytes, data_rows):
             doc_io.seek(0)
 
             # nama file berdasarkan kecamatan
-            safe_kecamatan = re.sub(r"[^\w\s-]", "", context["Nama"]).strip().replace(" ", "_")
+            safe_kecamatan = re.sub(r"[^\w\s-]", "", context["Kecamatan"]).strip().replace(" ", "_")
 
             if safe_kecamatan == "":
                 safe_kecamatan = "tanpa_nama"
+                
+            safe_nama = re.sub(r"[^\w\s-]", "", context["Nama"]).strip().replace(" ", "_")
 
-            filename = f"SPPD_Pasar_Murah_{safe_kecamatan}.docx"
+            filename = f"SPPD_Pasar_Murah_{safe_kecamatan}_{safe_nama}.docx"
 
             zip_file.writestr(filename, doc_io.read())
 
