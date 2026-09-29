@@ -5,55 +5,55 @@ from docx import Document
 from io import BytesIO
 from copy import deepcopy
 
+
+# =========================================================
+# KONFIGURASI HALAMAN
+# =========================================================
 st.set_page_config(
     page_title="Generator Perjanjian Kerja Petugas Keamanan DLH",
     page_icon="📄",
     layout="wide"
 )
 
-st.title("Generator Perjanjian Kerja Petugas Keamanan DLH")
+st.title("📄 Generator Perjanjian Kerja Petugas Keamanan DLH")
 st.caption(
-    "Generator Perjanjian Kerja antara Kuasa Pengguna Anggaran "
-    "Dinas Lingkungan Hidup Kabupaten Deli Serdang dengan "
-    "Petugas Keamanan Kantor Tahun 2026"
+    "Membuat seluruh Perjanjian Kerja Petugas Keamanan "
+    "Dinas Lingkungan Hidup Kabupaten Deli Serdang "
+    "dalam satu file Word."
 )
 
 
 # =========================================================
 # UPLOAD FILE
 # =========================================================
-
 col1, col2 = st.columns(2)
 
 with col1:
     excel_file = st.file_uploader(
-        "📊 Upload Excel Data Petugas Keamanan",
+        "📊 Upload Excel Data Petugas",
         type=["xlsx"]
     )
 
 with col2:
     template_file = st.file_uploader(
-        "📄 Upload Template Perjanjian Kerja (.docx)",
+        "📄 Upload Template Perjanjian Kerja",
         type=["docx"]
     )
 
 
 # =========================================================
-# MEMBERSIHKAN DATA
+# FUNGSI MEMBERSIHKAN NILAI
 # =========================================================
-
 def clean_value(value):
-    """
-    Membersihkan data hasil pembacaan Excel.
-    """
+    if value is None:
+        return ""
 
     if pd.isna(value):
         return ""
 
     value = str(value).strip()
 
-    # Menghilangkan .0 pada angka Excel
-    # contoh NIK 1234567890.0
+    # Mencegah angka seperti 12345.0
     if value.endswith(".0"):
         try:
             return str(int(float(value)))
@@ -64,190 +64,147 @@ def clean_value(value):
 
 
 # =========================================================
-# MEMBUAT CONTEXT TEMPLATE WORD
+# MEMBUAT CONTEXT UNTUK TEMPLATE WORD
 # =========================================================
-
 def create_context(row):
-    """
-    Mapping data Excel ke placeholder Word.
-
-    Placeholder template:
-    {{NOMOR}}
-    {{NAMA}}
-    {{NIK}}
-    {{TTL}}
-    {{PENDIDIKAN}}
-    {{ALAMAT}}
-    """
-
     return {
         "NOMOR": clean_value(row.get("NOMOR", "")),
         "NAMA": clean_value(row.get("NAMA", "")),
         "NIK": clean_value(row.get("NIK", "")),
         "TTL": clean_value(row.get("TTL", "")),
         "PENDIDIKAN": clean_value(row.get("PENDIDIKAN", "")),
-        "ALAMAT": clean_value(row.get("ALAMAT", "")),
+        "ALAMAT": clean_value(row.get("ALAMAT", ""))
     }
 
 
 # =========================================================
-# MENGGABUNGKAN SEMUA SURAT
+# RENDER SATU DOKUMEN
 # =========================================================
+def render_one_document(template_bytes, row):
+    tpl = DocxTemplate(BytesIO(template_bytes))
 
-def merge_documents(docs):
-    """
-    Menggabungkan hasil perjanjian kerja menjadi
-    satu file Word.
+    context = create_context(row)
 
-    Setiap pegawai dimulai pada halaman baru.
-    """
-
-    if not docs:
-        return None
-
-    first_doc = Document(docs[0])
-
-    for doc_stream in docs[1:]:
-
-        # Halaman baru sebelum dokumen berikutnya
-        first_doc.add_page_break()
-
-        sub_doc = Document(doc_stream)
-
-        for element in sub_doc.element.body:
-
-            # sectPr tidak perlu dicopy karena dapat
-            # menyebabkan section Word bertumpuk
-            if element.tag.endswith("sectPr"):
-                continue
-
-            first_doc.element.body.append(
-                deepcopy(element)
-            )
+    tpl.render(context)
 
     output = BytesIO()
-
-    first_doc.save(output)
-
+    tpl.save(output)
     output.seek(0)
 
     return output
 
 
 # =========================================================
-# MEMBUAT SELURUH PERJANJIAN
+# MERGE SEMUA DOKUMEN
 # =========================================================
+def merge_documents(document_streams):
+    if not document_streams:
+        return None
 
-def generate_single_docx(template_bytes, data_rows):
+    # Gunakan dokumen pertama sebagai dokumen utama
+    main_doc = Document(document_streams[0])
 
-    rendered_docs = []
+    # Tambahkan dokumen berikutnya
+    for doc_stream in document_streams[1:]:
+        main_doc.add_page_break()
+
+        sub_doc = Document(doc_stream)
+
+        for element in sub_doc.element.body:
+            # Hindari duplikasi section properties
+            if element.tag.endswith("sectPr"):
+                continue
+
+            main_doc.element.body.append(
+                deepcopy(element)
+            )
+
+    output = BytesIO()
+    main_doc.save(output)
+    output.seek(0)
+
+    return output
+
+
+# =========================================================
+# GENERATE SEMUA PERJANJIAN
+# =========================================================
+def generate_all_documents(template_bytes, data_rows):
+    rendered_documents = []
 
     for row in data_rows:
-
-        tpl = DocxTemplate(
-            BytesIO(template_bytes)
+        rendered = render_one_document(
+            template_bytes,
+            row
         )
 
-        context = create_context(row)
+        rendered_documents.append(rendered)
 
-        tpl.render(context)
-
-        doc_io = BytesIO()
-
-        tpl.save(doc_io)
-
-        doc_io.seek(0)
-
-        rendered_docs.append(
-            BytesIO(doc_io.getvalue())
-        )
-
-    return merge_documents(rendered_docs)
+    return merge_documents(rendered_documents)
 
 
 # =========================================================
 # PREVIEW TEXT
 # =========================================================
-
-def preview_docx_from_template(template_bytes, row):
-
-    tpl = DocxTemplate(
-        BytesIO(template_bytes)
+def preview_document(template_bytes, row):
+    rendered = render_one_document(
+        template_bytes,
+        row
     )
 
-    context = create_context(row)
+    doc = Document(rendered)
 
-    tpl.render(context)
+    result = []
 
-    temp = BytesIO()
-
-    tpl.save(temp)
-
-    temp.seek(0)
-
-    doc = Document(temp)
-
-    output_text = []
-
-    # Paragraph biasa
+    # Ambil paragraf
     for paragraph in doc.paragraphs:
+        text = paragraph.text.strip()
 
-        if paragraph.text.strip():
+        if text:
+            result.append(text)
 
-            output_text.append(
-                paragraph.text
-            )
-
-
-    # Isi tabel Word
+    # Ambil isi tabel
     for table in doc.tables:
-
         for table_row in table.rows:
+            cells = []
 
-            cells = [
-                cell.text.strip()
-                for cell in table_row.cells
-            ]
+            for cell in table_row.cells:
+                cell_text = cell.text.strip()
 
-            if any(cells):
+                if cell_text:
+                    cells.append(cell_text)
 
-                output_text.append(
+            if cells:
+                result.append(
                     " | ".join(cells)
                 )
 
-
-    return "\n".join(output_text)
+    return "\n".join(result)
 
 
 # =========================================================
 # LOGIKA UTAMA
 # =========================================================
-
 if excel_file is not None and template_file is not None:
 
     try:
-
-        # =================================================
-        # BACA EXCEL
-        # =================================================
-
+        # -------------------------------------------------
+        # MEMBACA EXCEL
+        # -------------------------------------------------
         df = pd.read_excel(
             excel_file,
             dtype=str
         ).fillna("")
 
-
-        # Bersihkan nama kolom
+        # Normalisasi nama kolom
         df.columns = [
             str(col).strip().upper()
             for col in df.columns
         ]
 
-
-        # =================================================
+        # -------------------------------------------------
         # KOLOM WAJIB
-        # =================================================
-
+        # -------------------------------------------------
         required_columns = [
             "NOMOR",
             "NAMA",
@@ -257,28 +214,23 @@ if excel_file is not None and template_file is not None:
             "ALAMAT"
         ]
 
-
-        missing_cols = [
-
+        missing_columns = [
             col
-
             for col in required_columns
-
             if col not in df.columns
-
         ]
 
-
-        if missing_cols:
-
+        if missing_columns:
             st.error(
-                "Kolom Excel berikut belum tersedia: "
-                + ", ".join(missing_cols)
+                "Kolom berikut tidak ditemukan di Excel: "
+                + ", ".join(missing_columns)
             )
 
-            st.write(
-                "Kolom yang ditemukan di Excel:"
+            st.info(
+                "Pastikan nama kolom Excel sama persis dengan format yang diperlukan."
             )
+
+            st.write("Kolom yang ditemukan:")
 
             st.code(
                 "\n".join(df.columns.tolist())
@@ -286,184 +238,185 @@ if excel_file is not None and template_file is not None:
 
             st.stop()
 
+        # -------------------------------------------------
+        # MEMBERSIHKAN DATA
+        # -------------------------------------------------
+        for col in required_columns:
+            df[col] = (
+                df[col]
+                .astype(str)
+                .str.strip()
+            )
 
-        # =================================================
-        # FILTER DATA VALID
-        # =================================================
-
-        df["NAMA"] = (
-            df["NAMA"]
-            .astype(str)
-            .str.strip()
-        )
-
-
+        # -------------------------------------------------
+        # FILTER BARIS VALID
+        # -------------------------------------------------
         df_valid = df[
             df["NAMA"] != ""
         ].copy()
 
-
         if df_valid.empty:
-
             st.error(
-                "Tidak terdapat data petugas keamanan "
-                "yang valid."
+                "Tidak ada data petugas yang valid. "
+                "Kolom NAMA tidak boleh kosong."
             )
-
             st.stop()
 
-
-        # =================================================
-        # INFORMASI DATA
-        # =================================================
-
+        # -------------------------------------------------
+        # TAMPILKAN DATA
+        # -------------------------------------------------
         st.success(
-            f"{len(df_valid)} data petugas keamanan "
-            "berhasil dibaca."
+            f"Berhasil membaca {len(df_valid)} data petugas."
         )
 
-
         with st.expander(
-            "👥 Lihat Data Petugas Keamanan"
+            "👥 Lihat Data Petugas"
         ):
-
             st.dataframe(
-                df_valid,
+                df_valid[
+                    required_columns
+                ],
                 use_container_width=True,
                 hide_index=True
             )
 
+        # -------------------------------------------------
+        # AMBIL TEMPLATE
+        # -------------------------------------------------
+        template_bytes = template_file.getvalue()
 
-        # =================================================
-        # TEMPLATE
-        # =================================================
-
-        template_bytes = (
-            template_file.getvalue()
+        data_rows = df_valid.to_dict(
+            orient="records"
         )
 
-
-        data_rows = (
-            df_valid
-            .to_dict(
-                orient="records"
-            )
-        )
-
-
-        # =================================================
+        # -------------------------------------------------
         # PREVIEW DATA PERTAMA
-        # =================================================
-
+        # -------------------------------------------------
         st.divider()
 
         st.subheader(
             "👁️ Preview Perjanjian Pertama"
         )
 
-
         try:
-
-            preview_text = (
-                preview_docx_from_template(
-                    template_bytes,
-                    data_rows[0]
-                )
+            preview_text = preview_document(
+                template_bytes,
+                data_rows[0]
             )
 
-
             st.text_area(
-                "Preview Isi Perjanjian",
+                "Preview Isi Dokumen",
                 value=preview_text,
-                height=600,
+                height=550,
                 disabled=True
             )
 
-
-        except Exception as e:
-
+        except Exception as preview_error:
             st.warning(
-                f"Preview tidak dapat ditampilkan: {e}"
+                "Preview tidak dapat ditampilkan."
             )
 
+            st.code(
+                str(preview_error)
+            )
 
-        # =================================================
-        # GENERATE FILE
-        # =================================================
-
+        # -------------------------------------------------
+        # GENERATE SEMUA DOKUMEN
+        # -------------------------------------------------
         st.divider()
 
         st.subheader(
-            "📥 Download Perjanjian Kerja"
+            "📥 Generate Dokumen"
         )
 
-
         with st.spinner(
-            "Sedang membuat semua perjanjian kerja..."
+            "Sedang membuat seluruh Perjanjian Kerja..."
         ):
-
-            final_doc = (
-                generate_single_docx(
-                    template_bytes,
-                    data_rows
-                )
+            final_document = generate_all_documents(
+                template_bytes,
+                data_rows
             )
 
-
-        if final_doc:
+        # -------------------------------------------------
+        # DOWNLOAD
+        # -------------------------------------------------
+        if final_document is not None:
+            st.success(
+                f"Dokumen berhasil dibuat untuk "
+                f"{len(df_valid)} petugas."
+            )
 
             st.download_button(
                 label=(
                     f"📥 Download Semua Perjanjian "
                     f"({len(df_valid)} Petugas)"
                 ),
-                data=final_doc.getvalue(),
+                data=final_document.getvalue(),
                 file_name=(
-                    "Perjanjian_Kerja_"
-                    "Petugas_Keamanan_DLH_2026.docx"
+                    "Perjanjian_Kerja_Petugas_"
+                    "Keamanan_DLH_2026.docx"
                 ),
                 mime=(
-                    "application/vnd.openxmlformats-"
-                    "officedocument.wordprocessingml.document"
+                    "application/vnd.openxmlformats-officedocument."
+                    "wordprocessingml.document"
                 ),
                 use_container_width=True
             )
 
-
     except Exception as e:
-
         st.error(
-            f"Terjadi kesalahan: {e}"
+            "Terjadi kesalahan saat memproses file."
+        )
+
+        st.code(
+            str(e)
         )
 
 
 # =========================================================
-# PETUNJUK FORMAT EXCEL
+# PETUNJUK FORMAT
 # =========================================================
+st.divider()
 
 with st.expander(
-    "ℹ️ Format Excel dan Placeholder Word"
+    "ℹ️ Petunjuk Format Excel dan Template Word"
 ):
 
-    st.markdown(
-        """
-### Kolom Excel
+    st.write(
+        "Kolom Excel yang harus tersedia:"
+    )
 
-File Excel harus memiliki kolom:
+    st.code(
+        "NOMOR\n"
+        "NAMA\n"
+        "NIK\n"
+        "TTL\n"
+        "PENDIDIKAN\n"
+        "ALAMAT"
+    )
 
-| NOMOR | NAMA | NIK | TTL | PENDIDIKAN | ALAMAT |
-|---|---|---|---|---|---|
-| 001 | Budi Santoso | 1271xxxxxxxxxxxx | Medan, 10 Januari 1990 | SMA | Deli Serdang |
-| 002 | Andi Saputra | 1271xxxxxxxxxxxx | Lubuk Pakam, 5 Mei 1992 | SMA | Lubuk Pakam |
+    st.write(
+        "Placeholder pada template Word:"
+    )
 
-### Placeholder pada Word
+    st.code(
+        "{{NOMOR}}\n"
+        "{{NAMA}}\n"
+        "{{NIK}}\n"
+        "{{TTL}}\n"
+        "{{PENDIDIKAN}}\n"
+        "{{ALAMAT}}"
+    )
 
-Gunakan:
+    st.write(
+        "Contoh penggunaan dalam template Word:"
+    )
 
-```text
-{{NOMOR}}
-{{NAMA}}
-{{NIK}}
-{{TTL}}
-{{PENDIDIKAN}}
-{{ALAMAT}}
+    st.code(
+        "NOMOR: {{NOMOR}} TAHUN 2026\n\n"
+        "II. Nama            : {{NAMA}}\n"
+        "    NIK             : {{NIK}}\n"
+        "    Tempat/tgl lahir: {{TTL}}\n"
+        "    Pendidikan      : {{PENDIDIKAN}}\n"
+        "    Alamat          : {{ALAMAT}}"
+    )
