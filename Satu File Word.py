@@ -44,6 +44,7 @@ def generate_single_docx(template_bytes, data_rows):
             "TTL": row.get("TTL", ""),
             "PENDIDIKAN": row.get("PENDIDIKAN", ""),
             "ALAMAT": row.get("ALAMAT", ""),
+            "NOMOR": row.get("NOMOR", ""),
         }
 
         tpl.render(context)
